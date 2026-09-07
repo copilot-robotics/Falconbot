@@ -2229,6 +2229,119 @@
             color: var(--error);
         }
 
+        /* ============ Voice Interaction Panel ============ */
+        .voice-panel {
+            background: linear-gradient(135deg, rgba(10, 22, 40, 0.95), rgba(168, 85, 247, 0.15));
+            border: 1px solid rgba(168, 85, 247, 0.35);
+            border-radius: 14px;
+            padding: 14px 18px;
+        }
+
+        .voice-title {
+            font-size: 0.9rem;
+            font-weight: 600;
+            color: #d8b4fe;
+            margin-bottom: 10px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .voice-body {
+            display: flex;
+            align-items: center;
+            gap: 14px;
+        }
+
+        .mic-btn {
+            width: 56px;
+            height: 56px;
+            border-radius: 50%;
+            border: 2px solid rgba(168, 85, 247, 0.5);
+            background: linear-gradient(135deg, #6366f1, #a855f7);
+            color: white;
+            font-size: 1.4rem;
+            cursor: pointer;
+            position: relative;
+            transition: transform 0.2s, box-shadow 0.3s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+        }
+
+        .mic-btn:hover {
+            transform: scale(1.06);
+            box-shadow: 0 0 20px rgba(168, 85, 247, 0.5);
+        }
+
+        .mic-btn.recording {
+            background: linear-gradient(135deg, #dc2626, #ef4444);
+            border-color: rgba(239, 68, 68, 0.6);
+            animation: micPulse 1.2s infinite;
+        }
+
+        @keyframes micPulse {
+            0%, 100% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.5); }
+            50% { box-shadow: 0 0 0 14px rgba(239, 68, 68, 0); }
+        }
+
+        .voice-info {
+            flex: 1;
+            min-width: 0;
+        }
+
+        .voice-status {
+            font-size: 0.8rem;
+            color: var(--text-muted);
+            margin-bottom: 6px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .voice-status.recording { color: #f87171; }
+        .voice-status.listening { color: #60a5fa; }
+        .voice-status.speaking { color: #4ade80; }
+        .voice-status.error { color: var(--error); }
+
+        .voice-toggle-row {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        .voice-toggle-row label {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            font-size: 0.78rem;
+            color: var(--text-muted);
+            cursor: pointer;
+        }
+
+        .voice-toggle-row input[type="checkbox"] {
+            accent-color: #a855f7;
+        }
+
+        .voice-lang-tag {
+            padding: 2px 8px;
+            border-radius: 10px;
+            font-size: 0.7rem;
+            background: rgba(168, 85, 247, 0.2);
+            color: #d8b4fe;
+            border: 1px solid rgba(168, 85, 247, 0.3);
+        }
+
+        .voice-unsupported {
+            font-size: 0.75rem;
+            color: var(--error);
+            padding: 8px;
+            background: rgba(239, 68, 68, 0.1);
+            border-radius: 6px;
+        }
+
         .toast {
             position: fixed;
             top: 20px;
@@ -2605,6 +2718,21 @@
                     <div class="speech-history" id="speechHistory"></div>
                     <div class="speech-actions">
                         <button class="btn-speech-clear" id="speechClearBtn">Clear 🗑</button>
+                    </div>
+                </div>
+
+                <!-- Voice Interaction Panel -->
+                <div class="voice-panel" id="voicePanel">
+                    <div class="voice-title">🎙 Voice Interaction 语音交互 <span class="voice-lang-tag" id="voiceLangTag">🇬🇧 EN</span></div>
+                    <div class="voice-body">
+                        <button class="mic-btn" id="micBtn" title="Click to speak / 点击说话">🎤</button>
+                        <div class="voice-info">
+                            <div class="voice-status" id="voiceStatus">Click the mic and speak · 点击麦克风说话</div>
+                            <div class="voice-toggle-row">
+                                <label><input type="checkbox" id="voiceEmotionToggle" checked> 🎭 同步情绪动作</label>
+                                <label><input type="checkbox" id="voiceTtsToggle" checked> 🔊 语音朗读回复</label>
+                            </div>
+                        </div>
                     </div>
                 </div>
 
@@ -3220,6 +3348,174 @@
             }
         }
 
+        // ============ Voice Interaction (ASR + TTS + Emotion) ============
+        const ASR_LANG_MAP = { 'en': 'en-US', 'zh': 'zh-CN', 'ar': 'ar-SA' };
+        const ASR_FLAG_MAP = { 'en': '🇬🇧', 'zh': '🇨🇳', 'ar': '🇸🇦' };
+
+        let recognition = null;
+        let isRecording = false;
+        let ttsEnabled = true;
+        let emotionSyncEnabled = true;
+        let pendingMicClick = false;
+
+        function initVoice() {
+            const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+            if (!SR) {
+                const panel = document.getElementById('voicePanel');
+                panel.innerHTML = '<div class="voice-unsupported">⚠ Voice API not supported in this browser. Use Chrome or Edge on HTTPS/localhost.</div>';
+                return false;
+            }
+            recognition = new SR();
+            recognition.continuous = false;
+            recognition.interimResults = false;
+            recognition.lang = ASR_LANG_MAP[currentChatLang] || 'en-US';
+
+            recognition.onstart = () => {
+                isRecording = true;
+                const btn = document.getElementById('micBtn');
+                btn.classList.add('recording');
+                btn.textContent = '⏹';
+                setVoiceStatus('Listening... 正在聆听...', 'recording');
+            };
+
+            recognition.onresult = (event) => {
+                const transcript = event.results[0][0].transcript.trim();
+                handleVoiceInput(transcript);
+            };
+
+            recognition.onerror = (event) => {
+                setVoiceStatus('Error: ' + event.error + ' · 点击麦克风重试', 'error');
+                resetMicBtn();
+            };
+
+            recognition.onend = () => {
+                resetMicBtn();
+            };
+
+            document.getElementById('micBtn').addEventListener('click', toggleMic);
+            document.getElementById('voiceTtsToggle').addEventListener('change', (e) => {
+                ttsEnabled = e.target.checked;
+            });
+            document.getElementById('voiceEmotionToggle').addEventListener('change', (e) => {
+                emotionSyncEnabled = e.target.checked;
+            });
+
+            // Update language tag
+            updateVoiceLangTag();
+            return true;
+        }
+
+        function updateVoiceLangTag() {
+            const el = document.getElementById('voiceLangTag');
+            if (el) {
+                const lang = currentChatLang || 'en';
+                el.textContent = (ASR_FLAG_MAP[lang] || '🇬🇧') + ' ' + lang.toUpperCase();
+            }
+            if (recognition) {
+                recognition.lang = ASR_LANG_MAP[currentChatLang] || 'en-US';
+            }
+        }
+
+        function toggleMic() {
+            if (!recognition) return;
+            if (isRecording) {
+                recognition.stop();
+            } else {
+                try {
+                    recognition.start();
+                } catch (e) {
+                    // Already started
+                }
+            }
+        }
+
+        function resetMicBtn() {
+            isRecording = false;
+            const btn = document.getElementById('micBtn');
+            btn.classList.remove('recording');
+            btn.textContent = '🎤';
+        }
+
+        function setVoiceStatus(text, cls) {
+            const el = document.getElementById('voiceStatus');
+            el.textContent = text;
+            el.className = 'voice-status' + (cls ? ' ' + cls : '');
+        }
+
+        async function handleVoiceInput(transcript) {
+            if (!transcript) return;
+            setVoiceStatus('You said: "' + transcript + '"', 'listening');
+            appendChatMsg('user', transcript, currentChatLang);
+            showSpeech(transcript, currentChatLang);
+
+            // Stop any ongoing TTS
+            if (window.speechSynthesis) window.speechSynthesis.cancel();
+
+            try {
+                setVoiceStatus('FalconBot is thinking...', 'listening');
+                const resp = await fetch('/api/llm/chat', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ message: transcript, language: currentChatLang })
+                });
+                const data = await resp.json();
+
+                if (data.success) {
+                    const replyLang = data.language || currentChatLang;
+                    const emotion = data.emotion || null;
+
+                    appendChatMsg('bot', data.reply, replyLang);
+                    showSpeech(data.reply, replyLang);
+
+                    // Trigger emotion if enabled
+                    if (emotion && emotionSyncEnabled) {
+                        startEmotion(emotion);
+                    }
+
+                    // Speak if TTS enabled
+                    if (ttsEnabled) {
+                        speakText(data.reply, replyLang);
+                    } else {
+                        setVoiceStatus('Done (TTS off)', 'idle');
+                    }
+                } else {
+                    appendChatMsg('system', '⚠ ' + data.message, currentChatLang);
+                    setVoiceStatus('Error: ' + data.message, 'error');
+                }
+            } catch (e) {
+                appendChatMsg('system', '⚠ Network error: ' + e.message, currentChatLang);
+                setVoiceStatus('Network error', 'error');
+            }
+        }
+
+        function speakText(text, lang) {
+            if (!('speechSynthesis' in window)) return;
+            const synth = window.speechSynthesis;
+            synth.cancel();
+
+            const utter = new SpeechSynthesisUtterance(text);
+            utter.lang = ASR_LANG_MAP[lang] || 'en-US';
+            utter.rate = 1.0;
+            utter.pitch = 1.0;
+
+            // Pick best voice for the language
+            const voices = synth.getVoices();
+            const matched = voices.find(v => v.lang && v.lang.toLowerCase().startsWith((ASR_LANG_MAP[lang] || 'en-US').split('-')[0]));
+            if (matched) utter.voice = matched;
+
+            utter.onstart = () => setVoiceStatus('FalconBot is speaking... 猎鹰正在说话...', 'speaking');
+            utter.onend = () => setVoiceStatus('Ready · 就绪', 'idle');
+            utter.onerror = () => setVoiceStatus('Speech error', 'error');
+
+            synth.speak(utter);
+        }
+
+        // Ensure voices are loaded (async in some browsers)
+        if ('speechSynthesis' in window) {
+            window.speechSynthesis.onvoiceschanged = () => { window.speechSynthesis.getVoices(); };
+            window.speechSynthesis.getVoices();
+        }
+
         async function loadLlmConfig() {
             try {
                 const response = await fetch('/api/llm/config');
@@ -3310,6 +3606,13 @@
                 if (data.success) {
                     appendChatMsg('bot', data.reply, data.language || currentChatLang);
                     showSpeech(data.reply, data.language || currentChatLang);
+                    // Trigger emotion sync + TTS for text chat too
+                    if (data.emotion && emotionSyncEnabled) {
+                        startEmotion(data.emotion);
+                    }
+                    if (ttsEnabled) {
+                        speakText(data.reply, data.language || currentChatLang);
+                    }
                 } else {
                     appendChatMsg('system', '⚠ ' + data.message, currentChatLang);
                 }
@@ -3343,6 +3646,7 @@
             btn.addEventListener('click', () => {
                 currentChatLang = btn.dataset.lang;
                 updateChatLangButtons();
+                updateVoiceLangTag();
                 const input = document.getElementById('chatInput');
                 input.dir = currentChatLang === 'ar' ? 'rtl' : 'ltr';
                 input.style.fontFamily = currentChatLang === 'ar' ? "'Noto Sans Arabic', sans-serif" : 'inherit';
@@ -3353,6 +3657,7 @@
         loadPorts();
         loadLlmConfig();
         updateSystemTime();
+        initVoice();
         setInterval(updateSystemTime, 1000);
 
         // ---- Sinusoidal motion control ----

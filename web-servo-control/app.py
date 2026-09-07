@@ -1476,7 +1476,10 @@ LANGUAGE_SYSTEM_PROMPTS = {
             'enthusiastic (legs only), and idle (subtle life-like micro-movements). '
             'You make falcon sounds: cackle when happy, whistle when calm, cry when enthusiastic. '
             'Respond in English. Be playful, curious, and slightly bird-like in personality. '
-            'Keep responses concise (1-3 sentences) as they will be spoken aloud.'
+            'Keep responses concise (1-3 sentences) as they will be spoken aloud. '
+            'IMPORTANT: Prefix EVERY response with an emotion tag on its own line: '
+            '[happy], [calm], [enthusiastic], or [idle]. '
+            'Choose the tag that best matches the emotion of your reply.'
         ),
     },
     'zh': {
@@ -1489,6 +1492,9 @@ LANGUAGE_SYSTEM_PROMPTS = {
             '你会发出鹰隼叫声：开心时咯咯叫、冷静时吹哨声、热情时鸣叫。'
             '请用中文回复。性格活泼、好奇、带有鸟类的特质。'
             '回复要简短（1-3句），因为回复会被朗读出来。'
+            '重要：每条回复开头必须单独一行加一个情绪标签：'
+            '[happy]（开心）、[calm]（冷静）、[enthusiastic]（热情）、[idle]（待机）。'
+            '根据回复的情绪选择最合适的标签。'
         ),
     },
     'ar': {
@@ -1501,7 +1507,10 @@ LANGUAGE_SYSTEM_PROMPTS = {
             'الحماس (الساقين فقط)، والخمول (حركات دقيقة تشبه الكائنات الحية). '
             'تصدر أصوات صقر: ضحك عند السعادة، صفير عند الهدوء، صياح عند الحماس. '
             'رد باللغة العربية. كن مرحًا وفضوليًا وذو شخصية تشبه الطيور. '
-            'اجعل الردود مختصرة (1-3 جمل) لأنها ستُنطق بصوت عالٍ.'
+            'اجعل الردود مختصرة (1-3 جمل) لأنها ستُنطق بصوت عالٍ. '
+            'مهم: ابدأ كل رد بوسم عاطفة في سطر منفصل: '
+            '[happy] أو [calm] أو [enthusiastic] أو [idle]. '
+            'اختر الوسم الأنسب لعاطفة ردك.'
         ),
     },
 }
@@ -1650,13 +1659,22 @@ def llm_chat():
     except (KeyError, IndexError):
         return jsonify({'success': False, 'message': 'Unexpected Gemini response format', 'raw': result})
 
-    # Append the model's reply to history.
+    # Parse emotion tag from the reply (e.g. "[happy]" at start) and strip it.
+    emotion_match = re.match(r'^\s*\[(happy|calm|enthusiastic|idle)\]\s*', reply_text, re.IGNORECASE)
+    emotion_tag = emotion_match.group(1).lower() if emotion_match else None
+    clean_reply = reply_text
+    if emotion_match:
+        clean_reply = reply_text[emotion_match.end():].strip()
+
+    # Append the model's reply to history (store clean version so history stays readable).
     with chat_history_lock:
-        chat_history[sid].append({'role': 'model', 'parts': [{'text': reply_text}]})
+        chat_history[sid].append({'role': 'model', 'parts': [{'text': clean_reply}]})
 
     return jsonify({
         'success': True,
-        'reply': reply_text,
+        'reply': clean_reply,
+        'raw_reply': reply_text,
+        'emotion': emotion_tag,
         'language': language,
         'language_name': LANGUAGE_SYSTEM_PROMPTS[language]['name'],
     })
