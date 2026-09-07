@@ -3,3 +3,9 @@ __pycache__/
 instance/
 *.db
 .DS_Store
+
+# C++ build artifacts
+driver/build/
+driver/examples/*/build/
+*.o
+*.a
