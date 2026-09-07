@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Falcon Robot Control System — Qiddiya City</title>
-    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&family=Noto+Sans+Arabic:wght@400;500;600&display=swap" rel="stylesheet">
     <style>
         :root {
             --primary: #0a1628;
@@ -2016,6 +2016,176 @@
             border-color: var(--gold);
         }
 
+        /* ---- Chat panel ---- */
+        .chat-panel {
+            background: var(--dark-card);
+            border-radius: 16px;
+            padding: 20px;
+            border: 1px solid var(--dark-border);
+            margin-top: 16px;
+        }
+
+        .chat-title {
+            font-size: 1.1rem;
+            font-weight: 600;
+            margin-bottom: 15px;
+            color: var(--text);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .chat-messages {
+            height: 280px;
+            overflow-y: auto;
+            background: var(--dark);
+            border-radius: 10px;
+            padding: 12px;
+            border: 1px solid var(--dark-border);
+            margin-bottom: 12px;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .chat-messages::-webkit-scrollbar { width: 6px; }
+        .chat-messages::-webkit-scrollbar-track { background: var(--dark); border-radius: 3px; }
+        .chat-messages::-webkit-scrollbar-thumb { background: var(--dark-border); border-radius: 3px; }
+
+        .chat-msg {
+            max-width: 80%;
+            padding: 10px 14px;
+            border-radius: 12px;
+            font-size: 0.9rem;
+            line-height: 1.5;
+            word-wrap: break-word;
+        }
+
+        .chat-msg.user {
+            align-self: flex-end;
+            background: linear-gradient(135deg, #1e3a8a, #0a1628);
+            color: var(--gold);
+            border: 1px solid rgba(251, 191, 36, 0.3);
+        }
+
+        .chat-msg.bot {
+            align-self: flex-start;
+            background: var(--dark-card);
+            color: var(--text);
+            border: 1px solid var(--dark-border);
+        }
+
+        .chat-msg.system {
+            align-self: center;
+            background: rgba(239, 68, 68, 0.1);
+            color: var(--error);
+            border: 1px solid rgba(239, 68, 68, 0.3);
+            font-size: 0.85rem;
+        }
+
+        .chat-msg.rtl {
+            direction: rtl;
+            text-align: right;
+            font-family: 'Noto Sans Arabic', 'Amiri', 'Traditional Arabic', sans-serif;
+        }
+
+        .chat-input-row {
+            display: flex;
+            gap: 8px;
+            align-items: center;
+        }
+
+        .chat-input {
+            flex: 1;
+            padding: 12px 15px;
+            border-radius: 10px;
+            border: 1px solid var(--dark-border);
+            background: var(--dark);
+            color: var(--text);
+            font-family: inherit;
+            font-size: 0.95rem;
+            transition: all 0.3s ease;
+        }
+
+        .chat-input:focus {
+            outline: none;
+            border-color: var(--gold);
+            box-shadow: 0 0 15px rgba(251, 191, 36, 0.15);
+        }
+
+        .chat-input:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .btn-chat-send {
+            padding: 12px 24px;
+            border-radius: 10px;
+            font-family: inherit;
+            font-size: 0.95rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            border: 1px solid rgba(251, 191, 36, 0.4);
+            background: linear-gradient(135deg, #1e3a8a, #0a1628);
+            color: var(--gold);
+            white-space: nowrap;
+        }
+
+        .btn-chat-send:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 20px rgba(10, 22, 40, 0.5);
+            border-color: var(--gold);
+        }
+
+        .btn-chat-send:disabled {
+            opacity: 0.4;
+            cursor: not-allowed;
+        }
+
+        .btn-chat-clear {
+            padding: 8px 16px;
+            border-radius: 8px;
+            font-family: inherit;
+            font-size: 0.85rem;
+            cursor: pointer;
+            border: 1px solid var(--dark-border);
+            background: transparent;
+            color: var(--text-muted);
+            transition: all 0.3s ease;
+        }
+
+        .btn-chat-clear:hover {
+            border-color: var(--error);
+            color: var(--error);
+        }
+
+        .chat-lang-row {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 12px;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+
+        .chat-lang-btn {
+            padding: 6px 16px;
+            border-radius: 20px;
+            font-family: inherit;
+            font-size: 0.85rem;
+            cursor: pointer;
+            border: 1px solid var(--dark-border);
+            background: transparent;
+            color: var(--text-muted);
+            transition: all 0.3s ease;
+        }
+
+        .chat-lang-btn.active {
+            border-color: var(--gold);
+            background: rgba(251, 191, 36, 0.1);
+            color: var(--gold);
+        }
+
         .toast {
             position: fixed;
             top: 20px;
@@ -2401,7 +2571,28 @@
                 <div class="llm-panel">
                     <div class="llm-title">🧠 LLM Configuration</div>
                     <div class="llm-section">
-                        <label class="llm-label" for="llmVoice">Voice Selection</label>
+                        <label class="llm-label" for="llmApiKey">Gemini API Key <span style="color:var(--gold)">*</span></label>
+                        <input type="password" class="llm-select" id="llmApiKey" placeholder="Get free key at https://aistudio.google.com/app/apikey" style="font-family:inherit;">
+                    </div>
+                    <div class="llm-section">
+                        <label class="llm-label" for="llmModel">Model</label>
+                        <select class="llm-select" id="llmModel">
+                            <option value="gemini-3.7-flash">Gemini 3.7 Flash (Latest, Free)</option>
+                            <option value="gemini-3.6-flash" selected>Gemini 3.6 Flash (Free)</option>
+                            <option value="gemini-3.5-flash">Gemini 3.5 Flash (Free, Older)</option>
+                            <option value="gemini-2.0-flash">Gemini 2.0 Flash (Free, Stable)</option>
+                        </select>
+                    </div>
+                    <div class="llm-section">
+                        <label class="llm-label" for="llmLanguage">Dialogue Language 对话语言</label>
+                        <select class="llm-select" id="llmLanguage">
+                            <option value="en">🇬🇧 English</option>
+                            <option value="zh">🇨🇳 中文</option>
+                            <option value="ar">🇸🇦 العربية</option>
+                        </select>
+                    </div>
+                    <div class="llm-section">
+                        <label class="llm-label" for="llmVoice">Voice</label>
                         <select class="llm-select" id="llmVoice">
                             <option value="male">Male</option>
                             <option value="female">Female</option>
@@ -2410,21 +2601,28 @@
                         </select>
                     </div>
                     <div class="llm-section">
-                        <label class="llm-label" for="llmModel">Model Selection</label>
-                        <select class="llm-select" id="llmModel">
-                            <option value="gpt-4">GPT-4</option>
-                            <option value="gpt-4o">GPT-4o</option>
-                            <option value="gpt-3.5-turbo">GPT-3.5 Turbo</option>
-                            <option value="claude-3-sonnet">Claude 3 Sonnet</option>
-                            <option value="claude-3-opus">Claude 3 Opus</option>
-                            <option value="gemini-1.5-pro">Gemini 1.5 Pro</option>
-                        </select>
+                        <label class="llm-label" for="llmPrompt">Robot Character Prompt 机器人角色提示词</label>
+                        <textarea class="llm-textarea" id="llmPrompt" placeholder="Define the robot's personality and behavior. e.g. 'You are a brave hunter falcon who loves to fly at dawn...'&#10;定义机器人的性格和行为，例如：'你是一只勇敢的猎鹰，喜欢在黎明时分飞翔...'"></textarea>
                     </div>
-                    <div class="llm-section">
-                        <label class="llm-label" for="llmPrompt">System Prompt (Robot Role)</label>
-                        <textarea class="llm-textarea" id="llmPrompt" placeholder="Define the role and behavior of the robot...">You are a helpful robot assistant. You control a robot arm with 10 servo motors (IDs 2-11). Respond to user commands about controlling the robot.</textarea>
+                    <button class="btn-save-config" id="saveLlmConfigBtn">Save Configuration 保存配置</button>
+                </div>
+
+                <!-- Chat Panel -->
+                <div class="chat-panel">
+                    <div class="chat-title">💬 Falcon Chat 猎鹰对话</div>
+                    <div class="chat-lang-row">
+                        <button class="chat-lang-btn active" data-lang="en">🇬🇧 EN</button>
+                        <button class="chat-lang-btn" data-lang="zh">🇨🇳 ZH</button>
+                        <button class="chat-lang-btn" data-lang="ar">🇸🇦 AR</button>
+                        <button class="btn-chat-clear" id="chatClearBtn" style="margin-left:auto;">🗑 Clear</button>
                     </div>
-                    <button class="btn-save-config" id="saveLlmConfigBtn">Save Configuration</button>
+                    <div class="chat-messages" id="chatMessages">
+                        <div class="chat-msg system" style="text-align:center;">Configure your Gemini API key above, then start chatting! 在上方配置 Gemini API Key 后开始对话！</div>
+                    </div>
+                    <div class="chat-input-row">
+                        <input type="text" class="chat-input" id="chatInput" placeholder="Type your message... 输入消息..." autocomplete="off">
+                        <button class="btn-chat-send" id="chatSendBtn">Send 发送</button>
+                    </div>
                 </div>
             </div>
         </div>
@@ -2929,15 +3127,21 @@
             }
         }
 
+        let currentChatLang = 'en';
+
         async function loadLlmConfig() {
             try {
                 const response = await fetch('/api/llm/config');
                 const data = await response.json();
                 
                 if (data.success && data.config) {
+                    document.getElementById('llmApiKey').value = data.config.api_key || '';
+                    document.getElementById('llmModel').value = data.config.model || 'gemini-3.6-flash';
+                    document.getElementById('llmLanguage').value = data.config.language || 'en';
                     document.getElementById('llmVoice').value = data.config.voice || 'male';
-                    document.getElementById('llmModel').value = data.config.model || 'gpt-4';
-                    document.getElementById('llmPrompt').value = data.config.prompt || '';
+                    document.getElementById('llmPrompt').value = data.config.character_prompt || '';
+                    currentChatLang = data.config.language || 'en';
+                    updateChatLangButtons();
                 }
             } catch (error) {
                 console.error('Failed to load LLM config:', error);
@@ -2946,9 +3150,11 @@
 
         async function saveLlmConfig() {
             const config = {
-                voice: document.getElementById('llmVoice').value,
+                api_key: document.getElementById('llmApiKey').value,
                 model: document.getElementById('llmModel').value,
-                prompt: document.getElementById('llmPrompt').value
+                language: document.getElementById('llmLanguage').value,
+                voice: document.getElementById('llmVoice').value,
+                character_prompt: document.getElementById('llmPrompt').value
             };
             
             try {
@@ -2961,6 +3167,8 @@
                 
                 if (data.success) {
                     showToast(data.message, 'success');
+                    currentChatLang = config.language;
+                    updateChatLangButtons();
                 } else {
                     showToast(data.message, 'error');
                 }
@@ -2969,7 +3177,85 @@
             }
         }
 
+        function updateChatLangButtons() {
+            document.querySelectorAll('.chat-lang-btn').forEach(btn => {
+                btn.classList.toggle('active', btn.dataset.lang === currentChatLang);
+            });
+        }
+
+        function appendChatMsg(role, text, lang) {
+            const container = document.getElementById('chatMessages');
+            const div = document.createElement('div');
+            div.className = 'chat-msg ' + role;
+            if (lang === 'ar') div.classList.add('rtl');
+            div.textContent = text;
+            container.appendChild(div);
+            container.scrollTop = container.scrollHeight;
+        }
+
+        async function sendChat() {
+            const input = document.getElementById('chatInput');
+            const btn = document.getElementById('chatSendBtn');
+            const msg = input.value.trim();
+            if (!msg) return;
+
+            // Clear the "configure" hint on first message
+            const sysHint = document.querySelector('#chatMessages .chat-msg.system');
+            if (sysHint) sysHint.remove();
+
+            appendChatMsg('user', msg, currentChatLang);
+            input.value = '';
+            input.disabled = true;
+            btn.disabled = true;
+            btn.textContent = '⏳ ...';
+
+            try {
+                const resp = await fetch('/api/llm/chat', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ message: msg, language: currentChatLang })
+                });
+                const data = await resp.json();
+                if (data.success) {
+                    appendChatMsg('bot', data.reply, data.language || currentChatLang);
+                } else {
+                    appendChatMsg('system', '⚠ ' + data.message, currentChatLang);
+                }
+            } catch (e) {
+                appendChatMsg('system', '⚠ Network error: ' + e.message, currentChatLang);
+            } finally {
+                input.disabled = false;
+                btn.disabled = false;
+                btn.textContent = 'Send 发送';
+                input.focus();
+            }
+        }
+
+        async function clearChat() {
+            try {
+                await fetch('/api/llm/clear', { method: 'POST' });
+                document.getElementById('chatMessages').innerHTML = '';
+            } catch (e) {
+                console.error('Clear chat error:', e);
+            }
+        }
+
         document.getElementById('saveLlmConfigBtn').addEventListener('click', saveLlmConfig);
+        document.getElementById('chatSendBtn').addEventListener('click', sendChat);
+        document.getElementById('chatClearBtn').addEventListener('click', clearChat);
+        document.getElementById('chatInput').addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') sendChat();
+        });
+        document.querySelectorAll('.chat-lang-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                currentChatLang = btn.dataset.lang;
+                updateChatLangButtons();
+                const input = document.getElementById('chatInput');
+                input.dir = currentChatLang === 'ar' ? 'rtl' : 'ltr';
+                input.style.fontFamily = currentChatLang === 'ar' ? "'Noto Sans Arabic', sans-serif" : 'inherit';
+                input.placeholder = currentChatLang === 'ar' ? 'اكتب رسالتك...' : 'Type your message... 输入消息...';
+            });
+        });
 
         loadPorts();
         loadLlmConfig();

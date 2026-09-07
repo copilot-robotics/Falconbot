@@ -5,7 +5,7 @@ instance/
 .DS_Store
 
 # C++ build artifacts
-driver/build/
-driver/examples/*/build/
+driver/**/build/
 *.o
 *.a
+llm_config.json

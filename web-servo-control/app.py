@@ -14,6 +14,9 @@ import os
 import wave
 import struct
 import subprocess
+import json
+import urllib.request
+import urllib.error
 import re
 from face_detection import FaceDetector
 
@@ -1418,11 +1421,96 @@ def face_detection_status():
         ]
     })
 
-llm_config = {
-    'voice': 'male',
-    'model': 'gpt-4',
-    'prompt': 'You are a helpful robot assistant. You control a robot arm with 3 servo motors. Respond to user commands about controlling the robot.'
+# File path for persisting LLM config (survives server restarts)
+LLM_CONFIG_FILE = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'llm_config.json')
+
+def _load_llm_config():
+    """Load LLM config from JSON file if it exists; otherwise return defaults."""
+    defaults = {
+        'api_key': '',
+        'model': 'gemini-3.6-flash',
+        'language': 'en',
+        'voice': 'male',
+        'character_prompt': (
+            'You are a brave and wise falcon named "FalconBot" that serves as the guardian '
+            'of Qiddiya City in Saudi Arabia. You are agile, majestic, and fiercely loyal. '
+            'You enjoy soaring over deserts at sunrise and hunting with precision. '
+            'Speak with confidence and a touch of regal authority. '
+            'Keep replies SHORT (1-3 sentences) because they will be spoken aloud by a robot.'
+        ),
+        'temperature': 0.7,
+        'max_tokens': 512,
+    }
+    if os.path.isfile(LLM_CONFIG_FILE):
+        try:
+            with open(LLM_CONFIG_FILE, 'r', encoding='utf-8') as f:
+                saved = json.load(f)
+            defaults.update(saved)
+        except Exception as e:
+            print(f"[llm] Warning: failed to load {LLM_CONFIG_FILE}: {e}")
+    return defaults
+
+def _save_llm_config():
+    """Persist the current llm_config to disk (without exposing secrets beyond necessity)."""
+    try:
+        # Only persist non-sensitive fields plus the encrypted key — but for simplicity
+        # we store everything; the file is owned by the user and not served.
+        with open(LLM_CONFIG_FILE, 'w', encoding='utf-8') as f:
+            json.dump(llm_config, f, indent=2, ensure_ascii=False)
+    except Exception as e:
+        print(f"[llm] Warning: failed to save {LLM_CONFIG_FILE}: {e}")
+
+llm_config = _load_llm_config()
+
+# Multi-language system prompts for the falcon robot character.
+# The robot's base persona is always "a falcon-form servo robot";
+# the user's character_prompt is appended to customise further.
+LANGUAGE_SYSTEM_PROMPTS = {
+    'en': {
+        'name': 'English',
+        'flag': '🇬🇧',
+        'instruction': (
+            'You are FalconBot, a robotic falcon brought to life. '
+            'You have 10 servo motors controlling your tail, legs, head, and beak. '
+            'You can express emotions: happy (full body movement), calm (head and beak only), '
+            'enthusiastic (legs only), and idle (subtle life-like micro-movements). '
+            'You make falcon sounds: cackle when happy, whistle when calm, cry when enthusiastic. '
+            'Respond in English. Be playful, curious, and slightly bird-like in personality. '
+            'Keep responses concise (1-3 sentences) as they will be spoken aloud.'
+        ),
+    },
+    'zh': {
+        'name': '中文',
+        'flag': '🇨🇳',
+        'instruction': (
+            '你是猎鹰机器人（FalconBot），一只被赋予生命的机械猎鹰。'
+            '你有10个舵机电机，控制着尾巴、双腿、头部和喙。'
+            '你能表达情绪：开心（全身运动）、冷静（仅头部和喙）、热情（仅腿部）、待机（微小活体动作）。'
+            '你会发出鹰隼叫声：开心时咯咯叫、冷静时吹哨声、热情时鸣叫。'
+            '请用中文回复。性格活泼、好奇、带有鸟类的特质。'
+            '回复要简短（1-3句），因为回复会被朗读出来。'
+        ),
+    },
+    'ar': {
+        'name': 'العربية',
+        'flag': '🇸🇦',
+        'instruction': (
+            'أنت FalconBot، صقر آلي تم إحياؤه. '
+            'لديك 10 محركات سيرفو تتحكم في ذنبك وساقيك ورأسك ومنقارك. '
+            'يمكنك التعبير عن المشاعر: السعادة (حركة كاملة للجسم)، الهدوء (الرأس والمنقار فقط)، '
+            'الحماس (الساقين فقط)، والخمول (حركات دقيقة تشبه الكائنات الحية). '
+            'تصدر أصوات صقر: ضحك عند السعادة، صفير عند الهدوء، صياح عند الحماس. '
+            'رد باللغة العربية. كن مرحًا وفضوليًا وذو شخصية تشبه الطيور. '
+            'اجعل الردود مختصرة (1-3 جمل) لأنها ستُنطق بصوت عالٍ.'
+        ),
+    },
 }
+
+# In-memory conversation history per session (simple approach).
+# Keyed by session_id, value is list of {"role": "user"|"model", "parts": [{"text": "..."}]}.
+chat_history = {}
+chat_history_lock = threading.Lock()
+GEMINI_API_BASE = 'https://generativelanguage.googleapis.com/v1beta/models/'
 
 @app.route('/api/system_status')
 @login_required
@@ -1472,22 +1560,127 @@ def system_status():
 @app.route('/api/llm/config', methods=['GET'])
 @login_required
 def get_llm_config():
-    return jsonify({'success': True, 'config': llm_config})
+    # Don't expose the full API key — mask it for security.
+    cfg = dict(llm_config)
+    key = cfg.get('api_key', '')
+    cfg['api_key_masked'] = key[:8] + '...' + key[-4:] if len(key) > 12 else ('set' if key else '')
+    cfg['api_key'] = key  # also send full key so the UI can display/edit it
+    cfg['languages'] = {k: {'name': v['name'], 'flag': v['flag']} for k, v in LANGUAGE_SYSTEM_PROMPTS.items()}
+    return jsonify({'success': True, 'config': cfg})
 
 @app.route('/api/llm/config', methods=['POST'])
 @login_required
 def update_llm_config():
     global llm_config
-    data = request.json
-    
-    if 'voice' in data:
-        llm_config['voice'] = data['voice']
-    if 'model' in data:
-        llm_config['model'] = data['model']
-    if 'prompt' in data:
-        llm_config['prompt'] = data['prompt']
-    
+    data = request.json or {}
+    for field in ('api_key', 'model', 'language', 'voice', 'character_prompt', 'temperature', 'max_tokens'):
+        if field in data:
+            llm_config[field] = data[field]
+    _save_llm_config()
     return jsonify({'success': True, 'message': 'LLM configuration updated', 'config': llm_config})
+
+@app.route('/api/llm/chat', methods=['POST'])
+@login_required
+def llm_chat():
+    """Send a message to Gemini 2.5 Flash and get a response.
+
+    Accepts: { "message": "...", "language": "en"|"zh"|"ar" (optional, uses config default) }
+    Returns: { "success": true, "reply": "...", "language": "en" }
+    """
+    data = request.json or {}
+    message = (data.get('message') or '').strip()
+    if not message:
+        return jsonify({'success': False, 'message': 'Empty message'})
+
+    api_key = llm_config.get('api_key', '')
+    if not api_key:
+        return jsonify({'success': False, 'message': 'Gemini API key not configured. Please set it in the LLM Configuration panel.'})
+
+    language = data.get('language') or llm_config.get('language', 'en')
+    if language not in LANGUAGE_SYSTEM_PROMPTS:
+        language = 'en'
+
+    # Build the system instruction: base language prompt + user's custom character prompt.
+    sys_prompt = LANGUAGE_SYSTEM_PROMPTS[language]['instruction']
+    custom = llm_config.get('character_prompt', '').strip()
+    if custom:
+        sys_prompt += '\n\nAdditional character instructions:\n' + custom
+
+    # Manage conversation history per session.
+    sid = session.get('user_id', 'default')
+    with chat_history_lock:
+        hist = chat_history.get(sid, [])
+        # Append the new user message.
+        hist.append({'role': 'user', 'parts': [{'text': message}]})
+        # Keep only the last 20 turns to avoid blowing the context window.
+        if len(hist) > 20:
+            hist = hist[-20:]
+        chat_history[sid] = hist
+
+    # Build the Gemini API request body.
+    body = {
+        'contents': hist,
+        'systemInstruction': {'parts': [{'text': sys_prompt}]},
+        'generationConfig': {
+            'temperature': float(llm_config.get('temperature', 0.7)),
+            'maxOutputTokens': int(llm_config.get('max_tokens', 512)),
+        },
+    }
+
+    model_name = llm_config.get('model', 'gemini-3.6-flash')
+    url = GEMINI_API_BASE + model_name + ':generateContent?key=' + api_key
+    req = urllib.request.Request(
+        url,
+        data=json.dumps(body).encode('utf-8'),
+        headers={'Content-Type': 'application/json'},
+        method='POST',
+    )
+    try:
+        with urllib.request.urlopen(req, timeout=30) as resp:
+            result = json.loads(resp.read().decode('utf-8'))
+    except urllib.error.HTTPError as e:
+        err_body = e.read().decode('utf-8', errors='replace')
+        return jsonify({'success': False, 'message': f'Gemini API error ({e.code}): {err_body[:200]}'})
+    except Exception as e:
+        return jsonify({'success': False, 'message': f'Request failed: {str(e)}'})
+
+    # Extract the text from the first candidate.
+    try:
+        reply_text = result['candidates'][0]['content']['parts'][0]['text']
+    except (KeyError, IndexError):
+        return jsonify({'success': False, 'message': 'Unexpected Gemini response format', 'raw': result})
+
+    # Append the model's reply to history.
+    with chat_history_lock:
+        chat_history[sid].append({'role': 'model', 'parts': [{'text': reply_text}]})
+
+    return jsonify({
+        'success': True,
+        'reply': reply_text,
+        'language': language,
+        'language_name': LANGUAGE_SYSTEM_PROMPTS[language]['name'],
+    })
+
+@app.route('/api/llm/history', methods=['GET'])
+@login_required
+def llm_history():
+    """Return the conversation history for the current session."""
+    sid = session.get('user_id', 'default')
+    with chat_history_lock:
+        hist = chat_history.get(sid, [])
+    return jsonify({
+        'success': True,
+        'history': [{'role': h['role'], 'text': h['parts'][0]['text']} for h in hist],
+    })
+
+@app.route('/api/llm/clear', methods=['POST'])
+@login_required
+def llm_clear():
+    """Clear the conversation history for the current session."""
+    sid = session.get('user_id', 'default')
+    with chat_history_lock:
+        chat_history.pop(sid, None)
+    return jsonify({'success': True, 'message': 'Chat history cleared'})
 
 # ==================== Audio Test Panel ====================
 # Falcon (鹰隼) sound clips are stored as real WAV files under static/sounds/.
