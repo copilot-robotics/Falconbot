@@ -1,0 +1,3805 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Falcon Robot Control System — Qiddiya City</title>
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary: #0a1628;
+            --primary-light: #1e3a8a;
+            --secondary: #fbbf24;
+            --accent: #f59e0b;
+            --dark: #060b18;
+            --dark-card: #0d1a2e;
+            --dark-border: #1e3a5f;
+            --text: #f1f5f9;
+            --text-muted: #8b9bb4;
+            --success: #22c55e;
+            --error: #ef4444;
+            --warning: #fbbf24;
+            --gold: #fbbf24;
+            --gold-dark: #d97706;
+            --glow-blue: rgba(30, 58, 138, 0.4);
+            --glow-gold: rgba(251, 191, 36, 0.3);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'JetBrains Mono', monospace;
+            background: var(--dark);
+            color: var(--text);
+            min-height: 100vh;
+            position: relative;
+        }
+
+        body::before {
+            content: '';
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background:
+                radial-gradient(ellipse at 0% 0%, rgba(30, 58, 138, 0.12) 0%, transparent 50%),
+                radial-gradient(ellipse at 100% 100%, rgba(251, 191, 36, 0.06) 0%, transparent 50%);
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 20px;
+            position: relative;
+            z-index: 1;
+        }
+
+        header {
+            text-align: center;
+            margin-bottom: 30px;
+            padding: 35px 25px;
+            background: linear-gradient(135deg, #0a1628 0%, #1e3a8a 50%, #0a1628 100%);
+            border-radius: 16px;
+            border: 1px solid rgba(251, 191, 36, 0.3);
+            box-shadow: 0 10px 40px rgba(10, 22, 40, 0.6), 0 0 30px rgba(251, 191, 36, 0.1);
+            position: relative;
+            overflow: hidden;
+        }
+
+        header::before {
+            content: '';
+            position: absolute;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: radial-gradient(ellipse at 50% 0%, rgba(251, 191, 36, 0.15) 0%, transparent 60%);
+            pointer-events: none;
+        }
+
+        header h1 {
+            font-size: 2.2rem;
+            font-weight: 700;
+            margin-bottom: 10px;
+            background: linear-gradient(90deg, #fbbf24, #fff8e1, #fbbf24);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            letter-spacing: 2px;
+        }
+
+        header p {
+            color: rgba(251, 191, 36, 0.8);
+            font-size: 1rem;
+            letter-spacing: 1px;
+        }
+
+        .main-content {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 25px;
+            margin-bottom: 30px;
+        }
+
+        .left-panel {
+            display: flex;
+            flex-direction: column;
+            gap: 25px;
+        }
+
+        .right-panel {
+            display: flex;
+            flex-direction: column;
+            gap: 25px;
+        }
+
+        .status-bar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 15px 25px;
+            background: var(--dark-card);
+            border-radius: 12px;
+            border: 1px solid var(--dark-border);
+        }
+
+        .status-left {
+            display: flex;
+            align-items: center;
+            gap: 20px;
+        }
+
+        .status-indicator {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .status-dot {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            animation: pulse 2s infinite;
+        }
+
+        .status-dot.connected {
+            background: var(--success);
+            box-shadow: 0 0 10px var(--success);
+        }
+
+        .status-dot.disconnected {
+            background: var(--error);
+            box-shadow: 0 0 10px var(--error);
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+
+        .user-info {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 8px 15px;
+            background: rgba(251, 191, 36, 0.1);
+            border-radius: 8px;
+            border: 1px solid rgba(251, 191, 36, 0.3);
+        }
+
+        .user-avatar {
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #1e3a8a, #fbbf24);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 700;
+            font-size: 0.9rem;
+            color: var(--dark);
+        }
+
+        .user-details {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .user-name {
+            font-size: 0.9rem;
+            font-weight: 600;
+        }
+
+        .user-role {
+            font-size: 0.75rem;
+            color: var(--secondary);
+        }
+
+        .btn-logout {
+            padding: 8px 15px;
+            border-radius: 8px;
+            border: 1px solid var(--dark-border);
+            background: var(--dark-card);
+            color: var(--text-muted);
+            font-family: inherit;
+            font-size: 0.85rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .btn-logout:hover {
+            border-color: var(--error);
+            color: var(--error);
+        }
+
+        .port-selector {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+        }
+
+        .port-selector select,
+        .port-selector button {
+            padding: 10px 15px;
+            border-radius: 8px;
+            border: 1px solid var(--dark-border);
+            background: var(--dark-card);
+            color: var(--text);
+            font-family: inherit;
+            font-size: 0.9rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .port-selector select:hover,
+        .port-selector button:hover {
+            border-color: var(--gold);
+            box-shadow: 0 0 15px rgba(251, 191, 36, 0.2);
+        }
+
+        .port-selector button.connect {
+            background: linear-gradient(135deg, #1e3a8a, #0a1628);
+            border: none;
+            color: var(--gold);
+        }
+
+        .port-selector button.disconnect {
+            background: linear-gradient(135deg, var(--error), #dc2626);
+            border: none;
+            color: white;
+        }
+
+        .servo-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+        }
+
+        @media (max-width: 768px) {
+            .servo-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .servo-card {
+            background: var(--dark-card);
+            border-radius: 16px;
+            padding: 25px;
+            border: 1px solid var(--dark-border);
+            transition: all 0.3s ease;
+        }
+
+        .servo-card:hover {
+            border-color: var(--gold);
+            box-shadow: 0 10px 30px rgba(10, 22, 40, 0.4), 0 0 20px rgba(251, 191, 36, 0.1);
+        }
+
+        .servo-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        .servo-id {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .servo-id-badge {
+            width: 40px;
+            height: 40px;
+            border-radius: 12px;
+            background: linear-gradient(135deg, #1e3a8a, #fbbf24);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.2rem;
+            font-weight: 700;
+            color: var(--dark);
+        }
+
+        .servo-id-label {
+            font-size: 1rem;
+            color: var(--text-muted);
+        }
+
+        .servo-values {
+            display: flex;
+            gap: 20px;
+        }
+
+        .servo-value {
+            text-align: center;
+        }
+
+        .servo-value-label {
+            font-size: 0.75rem;
+            color: var(--text-muted);
+            display: block;
+            margin-bottom: 5px;
+        }
+
+        .servo-value-number {
+            font-size: 1.3rem;
+            font-weight: 600;
+            font-family: 'JetBrains Mono', monospace;
+        }
+
+        .servo-value-number.target {
+            color: var(--gold);
+        }
+
+        .servo-value-number.current {
+            color: #60a5fa;
+        }
+
+        .slider-container {
+            position: relative;
+            margin: 25px 0;
+        }
+
+        .slider-track {
+            position: absolute;
+            top: 50%;
+            left: 0;
+            right: 0;
+            height: 8px;
+            background: var(--dark-border);
+            border-radius: 4px;
+            transform: translateY(-50%);
+        }
+
+        .slider-fill {
+            position: absolute;
+            top: 50%;
+            left: 0;
+            height: 8px;
+            background: linear-gradient(90deg, #1e3a8a, #fbbf24);
+            border-radius: 4px;
+            transform: translateY(-50%);
+            transition: width 0.1s ease;
+        }
+
+        input[type="range"] {
+            width: 100%;
+            height: 30px;
+            -webkit-appearance: none;
+            appearance: none;
+            background: transparent;
+            position: relative;
+            z-index: 1;
+            cursor: pointer;
+        }
+
+        input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 28px;
+            height: 28px;
+            border-radius: 50%;
+            background: #f1f5f9;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+            cursor: grab;
+            transition: all 0.3s ease;
+            border: 2px solid var(--gold);
+        }
+
+        input[type="range"]::-webkit-slider-thumb:hover {
+            transform: scale(1.1);
+            box-shadow: 0 6px 20px rgba(251, 191, 36, 0.5);
+        }
+
+        input[type="range"]::-webkit-slider-thumb:active {
+            cursor: grabbing;
+            transform: scale(1.2);
+        }
+
+        input[type="range"]::-moz-range-thumb {
+            width: 28px;
+            height: 28px;
+            border-radius: 50%;
+            background: #f1f5f9;
+            border: 2px solid var(--gold);
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+            cursor: grab;
+        }
+
+        .slider-labels {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 10px;
+            font-size: 0.8rem;
+            color: var(--text-muted);
+        }
+
+        .settings-panel {
+            background: var(--dark-card);
+            border-radius: 16px;
+            padding: 25px;
+            border: 1px solid var(--dark-border);
+        }
+
+        .settings-title {
+            font-size: 1.2rem;
+            font-weight: 600;
+            margin-bottom: 20px;
+            color: var(--text);
+        }
+
+        .settings-row {
+            display: flex;
+            gap: 25px;
+            flex-wrap: wrap;
+        }
+
+        .setting-item {
+            flex: 1;
+            min-width: 150px;
+        }
+
+        .setting-item label {
+            display: block;
+            margin-bottom: 10px;
+            font-size: 0.9rem;
+            color: var(--text-muted);
+        }
+
+        .setting-item input {
+            width: 100%;
+            padding: 12px 15px;
+            border-radius: 8px;
+            border: 1px solid var(--dark-border);
+            background: var(--dark);
+            color: var(--text);
+            font-family: inherit;
+            font-size: 1rem;
+            transition: all 0.3s ease;
+        }
+
+        .setting-item input:focus {
+            outline: none;
+            border-color: var(--gold);
+            box-shadow: 0 0 15px rgba(251, 191, 36, 0.15);
+        }
+
+        .actions-panel {
+            display: flex;
+            gap: 15px;
+            flex-wrap: wrap;
+        }
+
+        /* ---- Sinusoidal motion control panel ---- */
+        .sin-panel {
+            background: var(--dark-card);
+            border-radius: 16px;
+            padding: 25px;
+            border: 1px solid var(--dark-border);
+        }
+
+        .sin-title {
+            font-size: 1.2rem;
+            font-weight: 600;
+            margin-bottom: 18px;
+            color: var(--text);
+        }
+
+        .sin-row {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 10px 0;
+            border-bottom: 1px solid var(--dark-border);
+        }
+
+        .sin-row:last-of-type {
+            border-bottom: none;
+        }
+
+        .sin-id-badge {
+            flex-shrink: 0;
+            width: 36px;
+            height: 36px;
+            border-radius: 8px;
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 700;
+            font-size: 0.85rem;
+        }
+
+        .sin-field {
+            flex: 1;
+            min-width: 0;
+        }
+
+        .sin-field label {
+            display: block;
+            font-size: 0.7rem;
+            color: var(--text-muted);
+            margin-bottom: 4px;
+        }
+
+        .sin-field input {
+            width: 100%;
+            padding: 8px 10px;
+            border-radius: 8px;
+            border: 1px solid var(--dark-border);
+            background: var(--dark);
+            color: var(--text);
+            font-family: inherit;
+            font-size: 0.9rem;
+        }
+
+        .sin-field input:focus {
+            outline: none;
+            border-color: var(--gold);
+            box-shadow: 0 0 10px rgba(251, 191, 36, 0.15);
+        }
+
+        .sin-actions {
+            display: flex;
+            gap: 12px;
+            margin-top: 18px;
+        }
+
+        .btn-sin-start {
+            flex: 1;
+            background: linear-gradient(135deg, #15803d, #22c55e);
+            color: white;
+        }
+
+        .btn-sin-start:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 20px rgba(34, 197, 94, 0.4);
+        }
+
+        .btn-sin-stop {
+            flex: 1;
+            background: linear-gradient(135deg, #b45309, var(--warning));
+            color: white;
+        }
+
+        .btn-sin-stop:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 20px rgba(245, 158, 11, 0.4);
+        }
+
+        .sin-status-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: var(--error);
+            display: inline-block;
+            margin-left: 8px;
+        }
+
+        .sin-status-dot.active {
+            background: var(--success);
+            animation: pulse 1s infinite;
+        }
+
+        /* Toggle switch for per-servo enable */
+        .sin-toggle {
+            flex-shrink: 0;
+            position: relative;
+            width: 38px;
+            height: 20px;
+            cursor: pointer;
+        }
+
+        .sin-toggle input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+
+        .sin-toggle-slider {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: var(--dark-border);
+            border-radius: 20px;
+            transition: 0.3s;
+        }
+
+        .sin-toggle-slider::before {
+            content: "";
+            position: absolute;
+            height: 14px;
+            width: 14px;
+            left: 3px;
+            bottom: 3px;
+            background: white;
+            border-radius: 50%;
+            transition: 0.3s;
+        }
+
+        .sin-toggle input:checked + .sin-toggle-slider {
+            background: var(--success);
+        }
+
+        .sin-toggle input:checked + .sin-toggle-slider::before {
+            transform: translateX(18px);
+        }
+
+        .sin-toggle input:disabled + .sin-toggle-slider {
+            opacity: 0.4;
+            cursor: not-allowed;
+        }
+
+        /* ---- Servo ID scan panel ---- */
+        .scan-panel {
+            background: var(--dark-card);
+            border-radius: 16px;
+            padding: 25px;
+            border: 1px solid var(--dark-border);
+        }
+
+        .scan-title {
+            font-size: 1.2rem;
+            font-weight: 600;
+            margin-bottom: 18px;
+            color: var(--text);
+        }
+
+        .scan-actions {
+            display: flex;
+            gap: 12px;
+            margin-bottom: 18px;
+        }
+
+        .btn-scan {
+            flex: 1;
+            background: linear-gradient(135deg, #1e3a8a, #0a1628);
+            color: var(--gold);
+            border: 1px solid rgba(251, 191, 36, 0.4);
+        }
+
+        .btn-scan:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 20px rgba(10, 22, 40, 0.5), 0 0 20px rgba(251, 191, 36, 0.15);
+            border-color: var(--gold);
+        }
+
+        .btn-scan:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .scan-result-area {
+            min-height: 80px;
+            padding: 18px;
+            border-radius: 12px;
+            background: var(--dark);
+            border: 1px solid var(--dark-border);
+        }
+
+        .scan-placeholder {
+            color: var(--text-muted);
+            text-align: center;
+            padding: 10px;
+        }
+
+        .scan-id-list {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+
+        .scan-id-chip {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-width: 60px;
+            height: 44px;
+            padding: 0 14px;
+            border-radius: 10px;
+            background: linear-gradient(135deg, #1e3a8a, #fbbf24);
+            color: var(--dark);
+            font-weight: 700;
+            font-size: 1rem;
+            box-shadow: 0 4px 15px rgba(10, 22, 40, 0.4);
+        }
+
+        .scan-progress {
+            color: var(--text-muted);
+            font-size: 0.85rem;
+            text-align: center;
+        }
+
+        /* ---- Emotion actions panel (行为动作) ---- */
+        .emotion-panel {
+            background: var(--dark-card);
+            border-radius: 16px;
+            padding: 25px;
+            border: 1px solid var(--dark-border);
+        }
+
+        .emotion-title {
+            font-size: 1.2rem;
+            font-weight: 600;
+            margin-bottom: 18px;
+            color: var(--text);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .emotion-status-dot {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            background: var(--text-muted);
+            transition: background 0.3s;
+        }
+
+        .emotion-status-dot.active {
+            background: var(--gold);
+            box-shadow: 0 0 10px var(--glow-gold);
+            animation: pulse 1.2s infinite;
+        }
+
+        .emotion-buttons {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+        }
+
+        .btn-emotion {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 3px;
+            padding: 12px 10px;
+            border-radius: 10px;
+            border: 1px solid var(--dark-border);
+            background: var(--dark);
+            color: var(--text);
+            font-family: inherit;
+            font-size: 0.9rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .btn-emotion:hover {
+            border-color: var(--gold);
+            transform: translateY(-1px);
+        }
+
+        .btn-emotion:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .btn-emotion .emotion-sub {
+            font-size: 0.68rem;
+            font-weight: 400;
+            color: var(--text-muted);
+        }
+
+        .btn-emotion.happy.active {
+            border-color: var(--success);
+            background: rgba(34, 197, 94, 0.12);
+            box-shadow: 0 0 14px rgba(34, 197, 94, 0.25);
+        }
+
+        .btn-emotion.idle.active {
+            border-color: #a78bfa;
+            background: rgba(167, 139, 250, 0.12);
+            box-shadow: 0 0 14px rgba(167, 139, 250, 0.25);
+        }
+
+        .btn-emotion.calm.active {
+            border-color: #38bdf8;
+            background: rgba(56, 189, 248, 0.12);
+            box-shadow: 0 0 14px rgba(56, 189, 248, 0.25);
+        }
+
+        .btn-emotion.enthusiastic.active {
+            border-color: var(--gold);
+            background: rgba(251, 191, 36, 0.12);
+            box-shadow: 0 0 14px var(--glow-gold);
+        }
+
+        .btn-emotion-stop {
+            grid-column: 1 / -1;
+            padding: 10px;
+            border-radius: 10px;
+            border: 1px solid var(--dark-border);
+            background: var(--dark);
+            color: var(--error);
+            font-family: inherit;
+            font-size: 0.85rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .btn-emotion-stop:hover {
+            border-color: var(--error);
+            background: rgba(239, 68, 68, 0.1);
+        }
+
+        .emotion-drive-row {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-top: 16px;
+            padding: 12px;
+            border-radius: 10px;
+            background: var(--dark);
+            border: 1px solid var(--dark-border);
+        }
+
+        .drive-switch {
+            position: relative;
+            display: inline-block;
+            width: 46px;
+            height: 24px;
+            flex-shrink: 0;
+        }
+
+        .drive-switch input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+
+        .drive-switch-slider {
+            position: absolute;
+            cursor: pointer;
+            inset: 0;
+            background: var(--dark-border);
+            border-radius: 24px;
+            transition: 0.3s;
+        }
+
+        .drive-switch-slider:before {
+            content: '';
+            position: absolute;
+            height: 18px;
+            width: 18px;
+            left: 3px;
+            bottom: 3px;
+            background: var(--text-muted);
+            border-radius: 50%;
+            transition: 0.3s;
+        }
+
+        .drive-switch input:checked + .drive-switch-slider {
+            background: var(--gold-dark);
+        }
+
+        .drive-switch input:checked + .drive-switch-slider:before {
+            transform: translateX(22px);
+            background: var(--gold);
+        }
+
+        .drive-labels {
+            display: flex;
+            flex-direction: column;
+            gap: 2px;
+            min-width: 0;
+        }
+
+        .drive-label {
+            font-size: 0.85rem;
+            font-weight: 600;
+            color: var(--text);
+        }
+
+        .drive-hint {
+            font-size: 0.68rem;
+            color: var(--text-muted);
+            line-height: 1.4;
+        }
+
+        .emotion-status-line {
+            margin-top: 12px;
+            font-size: 0.78rem;
+            color: var(--text-muted);
+        }
+
+        .joint-bars {
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+            margin-top: 14px;
+        }
+
+        .joint-bar-row {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .joint-bar-id {
+            flex-shrink: 0;
+            width: 24px;
+            height: 20px;
+            border-radius: 5px;
+            background: var(--primary-light);
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.65rem;
+            font-weight: 700;
+        }
+
+        .joint-bar-label {
+            flex-shrink: 0;
+            width: 130px;
+            font-size: 0.68rem;
+            color: var(--text-muted);
+            transition: color 0.2s;
+        }
+
+        .joint-bar-row.active .joint-bar-label {
+            color: var(--gold);
+        }
+
+        .joint-bar-track {
+            flex: 1;
+            height: 12px;
+            background: var(--dark);
+            border: 1px solid var(--dark-border);
+            border-radius: 6px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .joint-bar-center {
+            position: absolute;
+            left: 50%;
+            top: 0;
+            bottom: 0;
+            width: 1px;
+            background: var(--dark-border);
+        }
+
+        .joint-bar-fill {
+            position: absolute;
+            left: 0;
+            top: 0;
+            bottom: 0;
+            width: 50%;
+            background: rgba(30, 58, 138, 0.35);
+        }
+
+        .joint-bar-knob {
+            position: absolute;
+            top: 1px;
+            bottom: 1px;
+            width: 8px;
+            margin-left: -4px;
+            border-radius: 4px;
+            background: var(--text-muted);
+            transition: left 0.1s linear;
+        }
+
+        .joint-bar-row.active .joint-bar-knob {
+            background: var(--gold);
+            box-shadow: 0 0 8px var(--glow-gold);
+        }
+
+        .joint-bar-value {
+            flex-shrink: 0;
+            width: 44px;
+            text-align: right;
+            font-size: 0.65rem;
+            color: var(--text-muted);
+            font-variant-numeric: tabular-nums;
+        }
+
+        /* ---- Audio test panel (speaker & microphone) ---- */
+        .audio-panel {
+            background: var(--dark-card);
+            border-radius: 16px;
+            padding: 25px;
+            border: 1px solid var(--dark-border);
+        }
+
+        .audio-title {
+            font-size: 1.2rem;
+            font-weight: 600;
+            margin-bottom: 8px;
+            color: var(--text);
+        }
+
+        .audio-device-info {
+            font-size: 0.72rem;
+            color: var(--text-muted);
+            margin-bottom: 14px;
+            line-height: 1.5;
+            padding: 8px 10px;
+            background: var(--dark);
+            border-radius: 8px;
+            border: 1px solid var(--dark-border);
+        }
+
+        .audio-device-info span {
+            color: var(--success);
+            font-weight: 600;
+        }
+
+        .volume-control {
+            margin-bottom: 14px;
+        }
+
+        .volume-control label {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 0.82rem;
+            color: var(--text-muted);
+            margin-bottom: 6px;
+        }
+
+        .volume-control label .vol-val {
+            color: var(--text);
+            font-weight: 600;
+            font-size: 0.85rem;
+        }
+
+        .volume-slider {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 100%;
+            height: 6px;
+            border-radius: 3px;
+            background: linear-gradient(to right, #1e3a8a, #fbbf24);
+            outline: none;
+            cursor: pointer;
+        }
+
+        .volume-slider::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 18px;
+            height: 18px;
+            border-radius: 50%;
+            background: var(--text);
+            border: 2px solid var(--gold);
+            cursor: pointer;
+            transition: transform 0.15s ease;
+        }
+
+        .volume-slider::-webkit-slider-thumb:hover {
+            transform: scale(1.2);
+        }
+
+        .volume-slider::-moz-range-thumb {
+            width: 16px;
+            height: 16px;
+            border-radius: 50%;
+            background: var(--text);
+            border: 2px solid var(--gold);
+            cursor: pointer;
+        }
+
+        .audio-status-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: var(--text-muted);
+            display: inline-block;
+            margin-left: 8px;
+        }
+
+        .audio-status-dot.active {
+            background: var(--success);
+            animation: pulse 1s infinite;
+        }
+
+        .audio-section-title {
+            font-size: 0.78rem;
+            color: var(--text-muted);
+            margin: 14px 0 10px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            font-weight: 600;
+        }
+
+        .animal-buttons {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        .btn-animal {
+            flex: 1;
+            min-width: 120px;
+            background: linear-gradient(135deg, #0a1628, #1e3a8a);
+            color: var(--gold);
+            font-size: 0.95rem;
+            padding: 12px 14px;
+            border: 1px solid rgba(251, 191, 36, 0.3);
+        }
+
+        .btn-animal:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 20px rgba(10, 22, 40, 0.5), 0 0 20px rgba(251, 191, 36, 0.15);
+            border-color: var(--gold);
+        }
+
+        .btn-animal:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
+        }
+
+        .mic-row {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-top: 10px;
+            flex-wrap: wrap;
+        }
+
+        .mic-row label {
+            font-size: 0.85rem;
+            color: var(--text-muted);
+        }
+
+        .mic-row input {
+            width: 70px;
+            padding: 8px 10px;
+            border-radius: 8px;
+            border: 1px solid var(--dark-border);
+            background: var(--dark);
+            color: var(--text);
+            font-family: inherit;
+            font-size: 0.9rem;
+        }
+
+        .mic-row input:focus {
+            outline: none;
+            border-color: var(--gold);
+            box-shadow: 0 0 10px rgba(251, 191, 36, 0.15);
+        }
+
+        .btn-record {
+            background: linear-gradient(135deg, #991b1b, var(--error));
+            color: white;
+            padding: 10px 18px;
+            font-size: 0.85rem;
+            border-radius: 12px;
+            border: none;
+            cursor: pointer;
+            font-family: inherit;
+            font-weight: 600;
+            transition: all 0.3s ease;
+        }
+
+        .btn-record:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 20px rgba(239, 68, 68, 0.4);
+        }
+
+        .btn-record:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .btn-audio-stop {
+            background: linear-gradient(135deg, #374151, #6b7280);
+            color: white;
+            padding: 10px 18px;
+            font-size: 0.85rem;
+            border-radius: 12px;
+            border: none;
+            cursor: pointer;
+            font-family: inherit;
+            font-weight: 600;
+            transition: all 0.3s ease;
+        }
+
+        .btn-audio-stop:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 20px rgba(107, 114, 128, 0.4);
+        }
+
+        .audio-result {
+            margin-top: 16px;
+            padding: 16px;
+            border-radius: 12px;
+            background: var(--dark);
+            border: 1px solid var(--dark-border);
+            min-height: 80px;
+        }
+
+        .audio-placeholder {
+            color: var(--text-muted);
+            text-align: center;
+            padding: 10px;
+            font-size: 0.85rem;
+        }
+
+        .audio-progress {
+            color: var(--text);
+            text-align: center;
+            font-size: 0.9rem;
+            padding: 6px;
+        }
+
+        .audio-recording-active {
+            color: var(--error);
+            font-weight: 600;
+            text-align: center;
+            animation: pulse 1s infinite;
+            padding: 6px;
+        }
+
+        .audio-playback {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .audio-playback audio {
+            width: 100%;
+        }
+
+        .audio-playback-label {
+            color: var(--success);
+            font-size: 0.85rem;
+            font-weight: 600;
+        }
+
+        .audio-download-row {
+            margin-top: 4px;
+        }
+
+        .audio-download-link {
+            color: var(--gold);
+            font-size: 0.8rem;
+            text-decoration: none;
+            border: 1px solid rgba(251, 191, 36, 0.3);
+            padding: 6px 12px;
+            border-radius: 8px;
+            display: inline-block;
+            transition: all 0.2s ease;
+        }
+
+        .audio-download-link:hover {
+            background: var(--dark);
+            border-color: var(--gold);
+        }
+
+        .audio-error {
+            color: var(--error);
+            font-size: 0.8rem;
+            padding: 6px 10px;
+            margin-bottom: 6px;
+            background: rgba(239, 68, 68, 0.1);
+            border-radius: 6px;
+        }
+
+        .btn {
+            padding: 15px 35px;
+            border-radius: 12px;
+            font-family: inherit;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            border: none;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .btn-move {
+            background: linear-gradient(135deg, #1e3a8a, #0a1628);
+            color: var(--gold);
+            box-shadow: 0 5px 20px rgba(10, 22, 40, 0.5), 0 0 15px rgba(251, 191, 36, 0.1);
+            border: 1px solid rgba(251, 191, 36, 0.4);
+        }
+
+        .btn-move:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 8px 30px rgba(10, 22, 40, 0.6), 0 0 25px rgba(251, 191, 36, 0.2);
+            border-color: var(--gold);
+        }
+
+        .btn-preset {
+            background: var(--dark-card);
+            color: var(--text);
+            border: 1px solid var(--dark-border);
+        }
+
+        .btn-preset:hover {
+            border-color: var(--gold);
+            color: var(--gold);
+            box-shadow: 0 0 15px rgba(251, 191, 36, 0.15);
+        }
+
+        .btn-reset {
+            background: var(--dark-card);
+            color: var(--warning);
+            border: 1px solid var(--warning);
+        }
+
+        .btn-reset:hover {
+            background: var(--warning);
+            color: white;
+        }
+
+        .btn-emergency {
+            background: linear-gradient(135deg, #991b1b, #ef4444);
+            color: white;
+            box-shadow: 0 5px 20px rgba(239, 68, 68, 0.4);
+            animation: emergency-pulse 1s infinite;
+        }
+
+        .btn-emergency:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 8px 30px rgba(239, 68, 68, 0.5);
+        }
+
+        @keyframes emergency-pulse {
+            0%, 100% { box-shadow: 0 5px 20px rgba(239, 68, 68, 0.4); }
+            50% { box-shadow: 0 5px 30px rgba(239, 68, 68, 0.6); }
+        }
+
+        .camera-panel {
+            background: var(--dark-card);
+            border-radius: 16px;
+            padding: 20px;
+            border: 1px solid var(--dark-border);
+            display: flex;
+            flex-direction: column;
+            height: 100%;
+        }
+
+        .camera-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+
+        .camera-title {
+            font-size: 1.2rem;
+            font-weight: 600;
+            color: var(--text);
+        }
+
+        .camera-controls {
+            display: flex;
+            gap: 10px;
+        }
+
+        .camera-btn {
+            padding: 8px 15px;
+            border-radius: 8px;
+            font-family: inherit;
+            font-size: 0.85rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            border: none;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .camera-btn.start {
+            background: linear-gradient(135deg, var(--success), #16a34a);
+            color: white;
+        }
+
+        .camera-btn.stop {
+            background: linear-gradient(135deg, var(--error), #dc2626);
+            color: white;
+        }
+
+        .camera-btn:hover {
+            transform: translateY(-2px);
+        }
+
+        .camera-container {
+            flex: 1;
+            background: #000;
+            border-radius: 12px;
+            overflow: hidden;
+            min-height: 300px;
+            position: relative;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .camera-container img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .camera-placeholder {
+            color: var(--text-muted);
+            text-align: center;
+            padding: 20px;
+        }
+
+        .camera-status {
+            position: absolute;
+            bottom: 10px;
+            right: 10px;
+            background: rgba(0, 0, 0, 0.7);
+            padding: 5px 10px;
+            border-radius: 5px;
+            font-size: 0.75rem;
+            color: var(--text);
+        }
+
+        .video-record-panel {
+            background: var(--dark-card);
+            border-radius: 16px;
+            padding: 20px;
+            border: 1px solid var(--dark-border);
+        }
+
+        .video-record-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+
+        .video-record-title {
+            font-size: 1.1rem;
+            font-weight: 600;
+            color: var(--text);
+        }
+
+        .video-record-controls {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+        }
+
+        .video-record-row {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 15px;
+            flex-wrap: wrap;
+        }
+
+        .video-record-row label {
+            font-size: 0.85rem;
+            color: var(--text-muted);
+        }
+
+        .video-record-row input[type="number"] {
+            width: 70px;
+            padding: 8px 10px;
+            background: var(--dark);
+            border: 1px solid var(--dark-border);
+            border-radius: 8px;
+            color: var(--text);
+            font-size: 0.9rem;
+            text-align: center;
+            outline: none;
+            transition: border-color 0.2s, box-shadow 0.2s;
+        }
+
+        .video-record-row input[type="number"]:focus {
+            border-color: var(--gold);
+            box-shadow: 0 0 0 2px rgba(251, 191, 36, 0.15);
+        }
+
+        .video-record-btn {
+            padding: 8px 18px;
+            border-radius: 8px;
+            font-family: inherit;
+            font-size: 0.85rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            border: none;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .video-record-btn.start {
+            background: linear-gradient(135deg, #dc2626, #991b1b);
+            color: white;
+            box-shadow: 0 4px 15px rgba(220, 38, 38, 0.4);
+        }
+
+        .video-record-btn.start:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(220, 38, 38, 0.5);
+        }
+
+        .video-record-btn.stop {
+            background: linear-gradient(135deg, var(--gold), #d97706);
+            color: var(--dark);
+            box-shadow: 0 4px 15px rgba(251, 191, 36, 0.4);
+        }
+
+        .video-record-btn.stop:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(251, 191, 36, 0.5);
+        }
+
+        .video-record-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none !important;
+        }
+
+        .video-record-timer {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 1.1rem;
+            font-weight: 600;
+            color: var(--gold);
+            padding: 8px 14px;
+            background: rgba(251, 191, 36, 0.1);
+            border: 1px solid rgba(251, 191, 36, 0.3);
+            border-radius: 8px;
+            min-width: 90px;
+            text-align: center;
+        }
+
+        .video-record-timer.recording {
+            color: var(--error);
+            border-color: var(--error);
+            background: rgba(220, 38, 38, 0.1);
+            animation: video-record-pulse 1s infinite;
+        }
+
+        @keyframes video-record-pulse {
+            0%, 100% { box-shadow: 0 0 0 0 rgba(220, 38, 38, 0.4); }
+            50% { box-shadow: 0 0 0 6px rgba(220, 38, 38, 0); }
+        }
+
+        .video-clips-list {
+            max-height: 250px;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .video-clips-list::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        .video-clips-list::-webkit-scrollbar-track {
+            background: var(--dark);
+            border-radius: 3px;
+        }
+
+        .video-clips-list::-webkit-scrollbar-thumb {
+            background: var(--dark-border);
+            border-radius: 3px;
+        }
+
+        .video-clips-placeholder {
+            text-align: center;
+            color: var(--text-muted);
+            font-size: 0.85rem;
+            padding: 20px;
+        }
+
+        .video-clip-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 10px 12px;
+            background: var(--dark);
+            border-radius: 10px;
+            border: 1px solid var(--dark-border);
+            transition: border-color 0.2s;
+        }
+
+        .video-clip-item:hover {
+            border-color: rgba(251, 191, 36, 0.4);
+        }
+
+        .video-clip-info {
+            flex: 1;
+            min-width: 0;
+        }
+
+        .video-clip-name {
+            font-size: 0.85rem;
+            color: var(--text);
+            font-weight: 500;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        .video-clip-meta {
+            font-size: 0.75rem;
+            color: var(--text-muted);
+            margin-top: 2px;
+        }
+
+        .video-clip-actions {
+            display: flex;
+            gap: 6px;
+            flex-shrink: 0;
+        }
+
+        .video-clip-btn {
+            padding: 5px 10px;
+            border-radius: 6px;
+            font-family: inherit;
+            font-size: 0.75rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            border: 1px solid var(--dark-border);
+            background: var(--dark-card);
+            color: var(--text-muted);
+        }
+
+        .video-clip-btn:hover {
+            border-color: var(--gold);
+            color: var(--gold);
+        }
+
+        .video-clip-btn.danger:hover {
+            border-color: var(--error);
+            color: var(--error);
+        }
+
+        .video-record-status-line {
+            font-size: 0.8rem;
+            color: var(--text-muted);
+            margin-bottom: 10px;
+            min-height: 18px;
+        }
+
+        .video-record-status-line.active {
+            color: var(--error);
+            font-weight: 600;
+        }
+
+        .face-detection-section {
+            margin-top: 15px;
+            padding: 12px;
+            background: rgba(255, 255, 255, 0.02);
+            border-radius: 10px;
+            border: 1px solid var(--dark-border);
+        }
+
+        .face-detection-toggle {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 10px;
+        }
+
+        .face-detection-toggle label {
+            font-size: 0.9rem;
+            font-weight: 600;
+            color: var(--text);
+            cursor: pointer;
+        }
+
+        .face-switch {
+            position: relative;
+            display: inline-block;
+            width: 46px;
+            height: 24px;
+        }
+
+        .face-switch input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+
+        .face-switch-slider {
+            position: absolute;
+            cursor: pointer;
+            inset: 0;
+            background-color: #4b5563;
+            transition: 0.3s;
+            border-radius: 24px;
+        }
+
+        .face-switch-slider:before {
+            position: absolute;
+            content: "";
+            height: 18px;
+            width: 18px;
+            left: 3px;
+            bottom: 3px;
+            background-color: white;
+            transition: 0.3s;
+            border-radius: 50%;
+        }
+
+        .face-switch input:checked + .face-switch-slider {
+            background-color: var(--error);
+        }
+
+        .face-switch input:checked + .face-switch-slider:before {
+            transform: translateX(22px);
+        }
+
+        .face-results {
+            font-size: 0.8rem;
+            color: var(--text-muted);
+            max-height: 120px;
+            overflow-y: auto;
+        }
+
+        .face-results::-webkit-scrollbar {
+            width: 4px;
+        }
+
+        .face-results::-webkit-scrollbar-thumb {
+            background: var(--dark-border);
+            border-radius: 2px;
+        }
+
+        .face-results-item {
+            padding: 6px 8px;
+            background: var(--dark);
+            border-radius: 6px;
+            margin-bottom: 4px;
+            border-left: 3px solid var(--error);
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.75rem;
+        }
+
+        .face-results-empty {
+            text-align: center;
+            color: var(--text-muted);
+            font-style: italic;
+            padding: 8px;
+        }
+
+        .face-detection-method {
+            font-size: 0.75rem;
+            padding: 4px 8px;
+            margin-bottom: 8px;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 4px;
+            text-align: center;
+            font-weight: 600;
+            letter-spacing: 0.5px;
+        }
+
+        .system-time {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 15px 20px;
+            background: rgba(251, 191, 36, 0.08);
+            border-radius: 10px;
+            border: 1px solid rgba(251, 191, 36, 0.3);
+        }
+
+        .system-time .time {
+            font-size: 2rem;
+            font-weight: 700;
+            color: var(--gold);
+            font-family: 'JetBrains Mono', monospace;
+        }
+
+        .system-time .date {
+            font-size: 0.85rem;
+            color: var(--text-muted);
+            margin-top: 5px;
+        }
+
+        .robot-status-panel {
+            background: var(--dark-card);
+            border-radius: 16px;
+            padding: 20px;
+            border: 1px solid var(--dark-border);
+        }
+
+        .robot-status-title {
+            font-size: 1.1rem;
+            font-weight: 600;
+            margin-bottom: 15px;
+            color: var(--text);
+        }
+
+        .status-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 15px;
+        }
+
+        .status-card {
+            background: var(--dark);
+            border-radius: 12px;
+            padding: 15px;
+            text-align: center;
+            border: 1px solid var(--dark-border);
+        }
+
+        .status-card-icon {
+            font-size: 1.8rem;
+            margin-bottom: 10px;
+        }
+
+        .status-card-label {
+            font-size: 0.75rem;
+            color: var(--text-muted);
+            display: block;
+            margin-bottom: 5px;
+        }
+
+        .status-card-value {
+            font-size: 1.4rem;
+            font-weight: 700;
+            font-family: 'JetBrains Mono', monospace;
+        }
+
+        .status-card-value.battery-high {
+            color: var(--success);
+        }
+
+        .status-card-value.battery-medium {
+            color: var(--warning);
+        }
+
+        .status-card-value.battery-low {
+            color: var(--error);
+        }
+
+        .status-card-value.temp-normal {
+            color: var(--success);
+        }
+
+        .status-card-value.temp-warning {
+            color: var(--warning);
+        }
+
+        .status-card-value.temp-danger {
+            color: var(--error);
+        }
+
+        .motors-status {
+            margin-top: 15px;
+            background: var(--dark);
+            border-radius: 12px;
+            padding: 15px;
+            border: 1px solid var(--dark-border);
+        }
+
+        .motors-status-title {
+            font-size: 0.9rem;
+            font-weight: 600;
+            color: var(--text-muted);
+            margin-bottom: 10px;
+        }
+
+        .motor-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 8px 0;
+            border-bottom: 1px solid var(--dark-border);
+        }
+
+        .motor-item:last-child {
+            border-bottom: none;
+        }
+
+        .motor-id {
+            font-weight: 600;
+            color: var(--gold);
+        }
+
+        .motor-position {
+            font-family: 'JetBrains Mono', monospace;
+            color: var(--text);
+        }
+
+        .motor-status {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+        }
+
+        .motor-status.connected {
+            background: var(--success);
+        }
+
+        .motor-status.disconnected {
+            background: var(--error);
+        }
+
+        .llm-panel {
+            background: var(--dark-card);
+            border-radius: 16px;
+            padding: 20px;
+            border: 1px solid var(--dark-border);
+        }
+
+        .llm-title {
+            font-size: 1.1rem;
+            font-weight: 600;
+            margin-bottom: 15px;
+            color: var(--text);
+        }
+
+        .llm-section {
+            margin-bottom: 20px;
+        }
+
+        .llm-section:last-child {
+            margin-bottom: 0;
+        }
+
+        .llm-label {
+            display: block;
+            margin-bottom: 10px;
+            font-size: 0.85rem;
+            color: var(--text-muted);
+            font-weight: 500;
+        }
+
+        .llm-select {
+            width: 100%;
+            padding: 12px 15px;
+            border-radius: 10px;
+            border: 1px solid var(--dark-border);
+            background: var(--dark);
+            color: var(--text);
+            font-family: inherit;
+            font-size: 0.95rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .llm-select:focus {
+            outline: none;
+            border-color: var(--gold);
+            box-shadow: 0 0 15px rgba(251, 191, 36, 0.15);
+        }
+
+        .llm-textarea {
+            width: 100%;
+            height: 120px;
+            padding: 12px 15px;
+            border-radius: 10px;
+            border: 1px solid var(--dark-border);
+            background: var(--dark);
+            color: var(--text);
+            font-family: inherit;
+            font-size: 0.95rem;
+            resize: vertical;
+            transition: all 0.3s ease;
+        }
+
+        .llm-textarea:focus {
+            outline: none;
+            border-color: var(--gold);
+            box-shadow: 0 0 15px rgba(251, 191, 36, 0.15);
+        }
+
+        .llm-textarea::placeholder {
+            color: var(--text-muted);
+        }
+
+        .btn-save-config {
+            width: 100%;
+            padding: 12px;
+            border-radius: 10px;
+            font-family: inherit;
+            font-size: 0.95rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            border: 1px solid rgba(251, 191, 36, 0.4);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            background: linear-gradient(135deg, #1e3a8a, #0a1628);
+            color: var(--gold);
+        }
+
+        .btn-save-config:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 20px rgba(10, 22, 40, 0.5), 0 0 20px rgba(251, 191, 36, 0.15);
+            border-color: var(--gold);
+        }
+
+        .toast {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            padding: 15px 25px;
+            border-radius: 10px;
+            font-family: inherit;
+            font-size: 0.9rem;
+            z-index: 1000;
+            animation: slideIn 0.3s ease;
+        }
+
+        .toast.success {
+            background: var(--success);
+            color: white;
+        }
+
+        .toast.error {
+            background: var(--error);
+            color: white;
+        }
+
+        .toast.info {
+            background: var(--primary-light);
+            color: white;
+            border: 1px solid rgba(251, 191, 36, 0.3);
+        }
+
+        .toast.warning {
+            background: var(--warning);
+            color: #1a1a2e;
+            border: 1px solid rgba(251, 191, 36, 0.5);
+        }
+
+        .scan-id-list {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+        }
+
+        .scan-id-chip {
+            display: inline-flex;
+            align-items: center;
+            padding: 6px 12px;
+            background: linear-gradient(135deg, #1e3a8a, #0a1628);
+            color: var(--gold);
+            border: 1px solid rgba(251, 191, 36, 0.4);
+            border-radius: 20px;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.85rem;
+            font-weight: 600;
+        }
+
+        .scan-progress {
+            padding: 15px;
+            background: rgba(59, 130, 246, 0.1);
+            border: 1px solid rgba(59, 130, 246, 0.3);
+            border-radius: 8px;
+            text-align: center;
+            color: var(--primary-light);
+            font-size: 0.9rem;
+            animation: pulse 1.5s infinite;
+        }
+
+        .scan-placeholder {
+            padding: 15px;
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px dashed var(--dark-border);
+            border-radius: 8px;
+            text-align: center;
+            color: var(--text-muted);
+            font-size: 0.85rem;
+        }
+
+        @keyframes slideIn {
+            from {
+                transform: translateX(100%);
+                opacity: 0;
+            }
+            to {
+                transform: translateX(0);
+                opacity: 1;
+            }
+        }
+
+        .footer {
+            text-align: center;
+            padding: 20px;
+            color: var(--text-muted);
+            font-size: 0.8rem;
+            border-top: 1px solid var(--dark-border);
+            margin-top: 10px;
+        }
+
+        .footer span {
+            color: var(--gold);
+            font-weight: 600;
+        }
+
+        @media (max-width: 1024px) {
+            .main-content {
+                grid-template-columns: 1fr;
+            }
+
+            .camera-container {
+                min-height: 250px;
+            }
+        }
+
+        @media (max-width: 768px) {
+            header h1 {
+                font-size: 1.5rem;
+            }
+
+            .status-bar {
+                flex-direction: column;
+                gap: 15px;
+            }
+
+            .servo-values {
+                flex-direction: column;
+                gap: 10px;
+            }
+
+            .settings-row {
+                flex-direction: column;
+            }
+
+            .actions-panel {
+                flex-direction: column;
+            }
+
+            .btn {
+                width: 100%;
+            }
+
+            .camera-controls {
+                flex-direction: column;
+            }
+
+            .camera-btn {
+                width: 100%;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>🦅 Falcon Flight Control System</h1>
+            <p>Qiddiya City — Falcon Robot Control Interface | Servo ID: 2 · 3 · 4 · 5 · 6 · 7 · 8 · 9 · 10 · 11</p>
+        </header>
+
+        <div class="status-bar">
+            <div class="status-left">
+                <div class="status-indicator">
+                    <div class="status-dot disconnected" id="statusDot"></div>
+                    <span id="statusText">Disconnected</span>
+                </div>
+                <div class="user-info">
+                    <div class="user-avatar" id="userAvatar">{{ user.username[0].upper() if user else '?' }}</div>
+                    <div class="user-details">
+                        <span class="user-name" id="userName">{{ user.username if user else 'Guest' }}</span>
+                        <span class="user-role" id="userRole">{{ user.role.title() if user else 'Unknown' }}</span>
+                    </div>
+                </div>
+            </div>
+            <div class="system-time">
+                <span class="time" id="systemTime">--:--:--</span>
+                <span class="date" id="systemDate">----/--/--</span>
+            </div>
+            <div class="port-selector">
+                <select id="portSelect">
+                    <option value="">Select Port</option>
+                </select>
+                <button class="connect" id="connectBtn">Connect</button>
+                <button class="disconnect" id="disconnectBtn" style="display: none;">Disconnect</button>
+                <button class="btn-logout" id="logoutBtn">Logout</button>
+            </div>
+        </div>
+
+        <div class="main-content">
+            <div class="left-panel">
+                <div class="servo-grid" id="servoGrid">
+                </div>
+
+                <div class="settings-panel">
+                    <div class="settings-title">Movement Settings</div>
+                    <div class="settings-row">
+                        <div class="setting-item">
+                            <label for="speedInput">Speed (0-2400)</label>
+                            <input type="number" id="speedInput" min="0" max="2400" value="2400">
+                        </div>
+                        <div class="setting-item">
+                            <label for="accInput">Acceleration (0-254)</label>
+                            <input type="number" id="accInput" min="0" max="254" value="50">
+                        </div>
+                    </div>
+                </div>
+
+                <div class="actions-panel">
+                    <button class="btn btn-emergency" id="emergencyBtn">Emergency Stop</button>
+                    <button class="btn btn-move" id="moveBtn">Move All Servos</button>
+                    <button class="btn btn-preset" id="preset1Btn">Preset 1</button>
+                    <button class="btn btn-preset" id="preset2Btn">Preset 2</button>
+                    <button class="btn btn-preset" id="preset3Btn">Preset 3</button>
+                    <button class="btn btn-reset" id="resetBtn">Reset All</button>
+                </div>
+
+                <div class="emotion-panel">
+                    <div class="emotion-title">
+                        🎭 Emotion Actions 行为动作
+                        <span class="emotion-status-dot" id="emotionStatusDot"></span>
+                    </div>
+
+                    <div class="emotion-buttons">
+                        <button class="btn btn-emotion idle" data-action="idle">💤 Idle 待机<span class="emotion-sub">Alive micro-motion 活体微动</span></button>
+                        <button class="btn btn-emotion happy" data-action="happy">😊 Happy 开心<span class="emotion-sub">Full body 全身</span></button>
+                        <button class="btn btn-emotion calm" data-action="calm">😌 Calm 冷静<span class="emotion-sub">Head + mouth 头+嘴</span></button>
+                        <button class="btn btn-emotion enthusiastic" data-action="enthusiastic">🤗 Enthusiastic 热情<span class="emotion-sub">Legs only 仅腿部</span></button>
+                        <button class="btn btn-emotion-stop" id="emotionStopBtn">⏹ Stop 停止</button>
+                    </div>
+
+                    <div class="emotion-drive-row">
+                        <label class="drive-switch">
+                            <input type="checkbox" id="emotionDriveRobot">
+                            <span class="drive-switch-slider"></span>
+                        </label>
+                        <div class="drive-labels">
+                            <span class="drive-label" id="emotionDriveLabel">Animation Only 仅动画</span>
+                            <span class="drive-hint" id="emotionDriveHint">OFF: only the on-screen animation moves · 开关打开后同时驱动机器人</span>
+                        </div>
+                    </div>
+
+                    <div class="emotion-status-line" id="emotionStatusLine">Idle — pick an action · 空闲，请选择动作</div>
+
+                    <div class="joint-bars" id="jointBars"></div>
+                </div>
+
+                <div class="sin-panel">
+                    <div class="sin-title">
+                        Sinusoidal Motion Control
+                        <span class="sin-status-dot" id="sinStatusDot"></span>
+                    </div>
+                    <div id="sinRows"></div>
+                    <div class="sin-actions">
+                        <button class="btn btn-sin-start" id="sinStartBtn">Start</button>
+                        <button class="btn btn-sin-stop" id="sinStopBtn">Pause</button>
+                    </div>
+                </div>
+
+                <div class="scan-panel">
+                    <div class="scan-title">
+                        Servo ID Auto Scan
+                    </div>
+                    <div class="scan-actions">
+                        <button class="btn btn-scan" id="scanIdsBtn">Start Scan</button>
+                    </div>
+                    <div class="scan-result-area" id="scanResultArea">
+                        <div class="scan-placeholder" id="scanPlaceholder">Click "Start Scan" to detect connected servo IDs</div>
+                    </div>
+                </div>
+
+                <div class="audio-panel">
+                    <div class="audio-title">
+                        🎵 Speaker &amp; Mic Test
+                        <span class="audio-status-dot" id="audioStatusDot"></span>
+                    </div>
+                    <div class="audio-device-info" id="audioDeviceInfo">
+                        Loading audio devices...
+                    </div>
+
+                    <div class="audio-section-title">🔊 Volume Control</div>
+                    <div class="volume-control">
+                        <label>
+                            <span>🔊 Speaker Volume</span>
+                            <span class="vol-val" id="speakerVolVal">--</span>
+                        </label>
+                        <input type="range" id="speakerVol" min="0" max="100" value="100" class="volume-slider">
+                    </div>
+
+                    <div class="audio-section-title">🔊 Speaker Test — Falcon Sounds</div>
+                    <div class="animal-buttons">
+                        <button class="btn btn-animal" data-animal="cry">🦅 Falcon Cry</button>
+                        <button class="btn btn-animal" data-animal="cackle">🦅 Falcon Cackle</button>
+                        <button class="btn btn-animal" data-animal="whistle">🦅 Falcon Whistle</button>
+                    </div>
+
+                    <div class="audio-section-title">🎤 Microphone Test</div>
+                    <div class="mic-row">
+                        <label for="recDuration">Duration (s):</label>
+                        <input type="number" id="recDuration" min="1" max="30" value="3">
+                        <button class="btn-record" id="recordBtn">⏺ Start Recording</button>
+                        <button class="btn-audio-stop" id="audioStopBtn">⏹ Stop</button>
+                    </div>
+
+                    <div class="audio-result" id="audioResult">
+                        <div class="audio-placeholder" id="audioPlaceholder">Click a falcon sound to test the speaker, or set a duration and click "Start Recording" — speak into the mic during recording to test it</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="right-panel">
+                <div class="camera-panel">
+                    <div class="camera-header">
+                        <div class="camera-title">Camera Feed</div>
+                        <div class="camera-controls">
+                            <button class="camera-btn start" id="cameraStartBtn">Start Camera</button>
+                            <button class="camera-btn stop" id="cameraStopBtn" style="display: none;">Stop Camera</button>
+                        </div>
+                    </div>
+                    <div class="camera-container" id="cameraContainer">
+                        <div class="camera-placeholder">
+                            <div>📷 Camera Not Active</div>
+                            <div style="font-size: 0.8rem; margin-top: 10px;">Click "Start Camera" to view live feed</div>
+                        </div>
+                        <div class="camera-status" id="cameraStatus" style="display: none;">Live</div>
+                    </div>
+                </div>
+
+                <div class="video-record-panel">
+                    <div class="video-record-header">
+                        <div class="video-record-title">🎬 Video Recording</div>
+                    </div>
+                    <div class="video-record-status-line" id="videoRecordStatusLine">Camera must be active to record clips</div>
+                    <div class="video-record-row">
+                        <label for="videoDuration">Duration (s):</label>
+                        <input type="number" id="videoDuration" min="1" max="300" value="30">
+                        <div class="video-record-controls">
+                            <button class="video-record-btn start" id="videoRecordStartBtn">⏺ Record</button>
+                            <button class="video-record-btn stop" id="videoRecordStopBtn" style="display: none;">⏹ Stop</button>
+                            <div class="video-record-timer" id="videoRecordTimer">0.0s</div>
+                        </div>
+                    </div>
+                    <div class="audio-section-title">📁 Saved Clips</div>
+                    <div class="video-clips-list" id="videoClipsList">
+                        <div class="video-clips-placeholder" id="videoClipsPlaceholder">No video clips recorded yet</div>
+                    </div>
+
+                    <div class="face-detection-section">
+                        <div class="face-detection-toggle">
+                            <label for="faceDetectToggle">👤 Face Detection</label>
+                            <div class="face-switch">
+                                <input type="checkbox" id="faceDetectToggle">
+                                <span class="face-switch-slider"></span>
+                            </div>
+                        </div>
+                        <div class="face-detection-method" id="faceDetectMethod" style="display:none;"></div>
+                        <div class="face-results" id="faceResults">
+                            <div class="face-results-empty">Enable to detect faces in video stream</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="robot-status-panel">
+                    <div class="robot-status-title">🤖 Robot Status</div>
+                    <div class="status-grid">
+                        <div class="status-card">
+                            <div class="status-card-icon">🔋</div>
+                            <span class="status-card-label">Battery</span>
+                            <span class="status-card-value" id="batteryValue">--</span>
+                        </div>
+                        <div class="status-card">
+                            <div class="status-card-icon">🌡️</div>
+                            <span class="status-card-label">Temperature</span>
+                            <span class="status-card-value" id="tempValue">--</span>
+                        </div>
+                        <div class="status-card">
+                            <div class="status-card-icon">⚡</div>
+                            <span class="status-card-label">Motor Status</span>
+                            <span class="status-card-value" id="motorStatusValue">--</span>
+                        </div>
+                    </div>
+                    <div class="motors-status">
+                        <div class="motors-status-title">
+                            <span>Servo Motors</span>
+                            <span style="font-size:0.75rem;color:var(--text-muted)">Live Position</span>
+                        </div>
+                        <div id="motorItems"></div>
+                    </div>
+                </div>
+
+                <div class="llm-panel">
+                    <div class="llm-title">🧠 LLM Configuration</div>
+                    <div class="llm-section">
+                        <label class="llm-label" for="llmVoice">Voice Selection</label>
+                        <select class="llm-select" id="llmVoice">
+                            <option value="male">Male</option>
+                            <option value="female">Female</option>
+                            <option value="neutral">Neutral</option>
+                            <option value="child">Child</option>
+                        </select>
+                    </div>
+                    <div class="llm-section">
+                        <label class="llm-label" for="llmModel">Model Selection</label>
+                        <select class="llm-select" id="llmModel">
+                            <option value="gpt-4">GPT-4</option>
+                            <option value="gpt-4o">GPT-4o</option>
+                            <option value="gpt-3.5-turbo">GPT-3.5 Turbo</option>
+                            <option value="claude-3-sonnet">Claude 3 Sonnet</option>
+                            <option value="claude-3-opus">Claude 3 Opus</option>
+                            <option value="gemini-1.5-pro">Gemini 1.5 Pro</option>
+                        </select>
+                    </div>
+                    <div class="llm-section">
+                        <label class="llm-label" for="llmPrompt">System Prompt (Robot Role)</label>
+                        <textarea class="llm-textarea" id="llmPrompt" placeholder="Define the role and behavior of the robot...">You are a helpful robot assistant. You control a robot arm with 10 servo motors (IDs 2-11). Respond to user commands about controlling the robot.</textarea>
+                    </div>
+                    <button class="btn-save-config" id="saveLlmConfigBtn">Save Configuration</button>
+                </div>
+            </div>
+        </div>
+
+        <div class="footer">
+            <span>FALCON FLIGHT</span> · QIDDIYA CITY · ROBOT CONTROL v1.0
+        </div>
+    </div>
+
+    <script>
+        const servos = [2, 3, 4, 5, 6, 7, 8, 9, 10, 11];
+        let connected = false;
+        let cameraActive = false;
+
+        // ---- Dynamically generate servo cards, sin rows, and motor status items ----
+        (function generateServoUI() {
+            // Servo cards
+            const grid = document.getElementById('servoGrid');
+            servos.forEach(id => {
+                const card = document.createElement('div');
+                card.className = 'servo-card';
+                card.innerHTML = `
+                    <div class="servo-header">
+                        <div class="servo-id">
+                            <div class="servo-id-badge">${id}</div>
+                            <span class="servo-id-label">Servo ID</span>
+                        </div>
+                        <div class="servo-values">
+                            <div class="servo-value">
+                                <span class="servo-value-label">Target</span>
+                                <span class="servo-value-number target" id="value${id}">2048</span>
+                            </div>
+                            <div class="servo-value">
+                                <span class="servo-value-label">Current</span>
+                                <span class="servo-value-number current" id="current${id}">-</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="slider-container">
+                        <div class="slider-track"></div>
+                        <div class="slider-fill" id="fill${id}" style="width: 50%"></div>
+                        <input type="range" min="0" max="4095" value="2048" id="slider${id}">
+                    </div>
+                    <div class="slider-labels">
+                        <span>0</span>
+                        <span>2048</span>
+                        <span>4095</span>
+                    </div>`;
+                grid.appendChild(card);
+            });
+
+            // Sin motion rows
+            const sinRows = document.getElementById('sinRows');
+            servos.forEach(id => {
+                const row = document.createElement('div');
+                row.className = 'sin-row';
+                row.innerHTML = `
+                    <div class="sin-id-badge">${id}</div>
+                    <label class="sin-toggle">
+                        <input type="checkbox" id="sinEn${id}" checked>
+                        <span class="sin-toggle-slider"></span>
+                    </label>
+                    <div class="sin-field">
+                        <label>Range (0-2048)</label>
+                        <input type="number" id="sinAmp${id}" min="0" max="2048" value="1000">
+                    </div>
+                    <div class="sin-field">
+                        <label>Freq (Hz)</label>
+                        <input type="number" id="sinFreq${id}" min="0.01" max="10" step="0.01" value="0.5">
+                    </div>`;
+                sinRows.appendChild(row);
+            });
+
+            // Motor status items
+            const motorItems = document.getElementById('motorItems');
+            servos.forEach(id => {
+                const item = document.createElement('div');
+                item.className = 'motor-item';
+                item.innerHTML = `
+                    <span class="motor-id">ID: ${id}</span>
+                    <span class="motor-position" id="motorPos${id}" style="color:var(--success)">2048</span>
+                    <div class="motor-status disconnected" id="motorStatus${id}"></div>`;
+                motorItems.appendChild(item);
+            });
+        })();
+
+        function updateSlider(id) {
+            const slider = document.getElementById(`slider${id}`);
+            const value = document.getElementById(`value${id}`);
+            const fill = document.getElementById(`fill${id}`);
+            
+            value.textContent = slider.value;
+            const percentage = (slider.value / 4095) * 100;
+            fill.style.width = `${percentage}%`;
+        }
+
+        let dragMoveTimer = null;
+        let isDragging = false;
+
+        function sendDragMove() {
+            if (!connected) return;
+
+            const positions = {};
+            servos.forEach(id => {
+                positions[id] = parseInt(document.getElementById(`slider${id}`).value);
+            });
+
+            const speed = parseInt(document.getElementById('speedInput').value);
+            const acceleration = parseInt(document.getElementById('accInput').value);
+
+            fetch('/api/move', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ positions, speed, acceleration })
+            }).catch(error => {
+                console.error('Drag move failed:', error);
+            });
+        }
+
+        servos.forEach(id => {
+            const slider = document.getElementById(`slider${id}`);
+            slider.addEventListener('input', () => {
+                updateSlider(id);
+                if (connected) {
+                    clearTimeout(dragMoveTimer);
+                    dragMoveTimer = setTimeout(sendDragMove, 50);
+                }
+            });
+            slider.addEventListener('mousedown', () => { isDragging = true; });
+            slider.addEventListener('touchstart', () => { isDragging = true; });
+        });
+
+        document.addEventListener('mouseup', () => {
+            if (isDragging) {
+                isDragging = false;
+                if (connected) {
+                    clearTimeout(dragMoveTimer);
+                    sendDragMove();
+                }
+            }
+        });
+        document.addEventListener('touchend', () => {
+            if (isDragging) {
+                isDragging = false;
+                if (connected) {
+                    clearTimeout(dragMoveTimer);
+                    sendDragMove();
+                }
+            }
+        });
+
+        async function loadPorts() {
+            try {
+                const response = await fetch('/api/ports');
+                const ports = await response.json();
+                const select = document.getElementById('portSelect');
+                select.innerHTML = '<option value="">Select Port</option>';
+                ports.forEach(port => {
+                    const option = document.createElement('option');
+                    option.value = port.device;
+                    option.textContent = `${port.device} - ${port.description}`;
+                    select.appendChild(option);
+                });
+            } catch (error) {
+                console.error('Failed to load ports:', error);
+            }
+        }
+
+        function showToast(message, type = 'info') {
+            const toast = document.createElement('div');
+            toast.className = `toast ${type}`;
+            toast.textContent = message;
+            document.body.appendChild(toast);
+            
+            setTimeout(() => {
+                toast.remove();
+            }, 3000);
+        }
+
+        async function connect() {
+            const port = document.getElementById('portSelect').value;
+            if (!port) {
+                showToast('Please select a port', 'error');
+                return;
+            }
+
+            const btn = document.getElementById('connectBtn');
+            btn.disabled = true;
+            btn.textContent = 'Connecting...';
+
+            try {
+                const response = await fetch('/api/connect', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ port })
+                });
+                const data = await response.json();
+                
+                if (data.success) {
+                    connected = true;
+                    updateStatus(true);
+                    if (data.servos_responding) {
+                        showToast(data.message, 'success');
+                    } else {
+                        showToast(data.message, 'warning');
+                    }
+                    setTimeout(fetchPositions, 200);
+                } else {
+                    showToast(data.message, 'error');
+                }
+            } catch (error) {
+                showToast('Connection failed: ' + error.message, 'error');
+            } finally {
+                btn.disabled = false;
+                btn.textContent = 'Connect';
+            }
+        }
+
+        async function disconnect() {
+            try {
+                const response = await fetch('/api/disconnect', {
+                    method: 'POST'
+                });
+                const data = await response.json();
+                
+                if (data.success) {
+                    connected = false;
+                    updateStatus(false);
+                    showToast(data.message, 'info');
+                    servos.forEach(id => {
+                        document.getElementById(`current${id}`).textContent = '-';
+                    });
+                }
+            } catch (error) {
+                showToast('Disconnect failed: ' + error.message, 'error');
+            }
+        }
+
+        function updateStatus(isConnected) {
+            const dot = document.getElementById('statusDot');
+            const text = document.getElementById('statusText');
+            const connectBtn = document.getElementById('connectBtn');
+            const disconnectBtn = document.getElementById('disconnectBtn');
+            const portSelect = document.getElementById('portSelect');
+
+            if (isConnected) {
+                dot.className = 'status-dot connected';
+                text.textContent = 'Connected';
+                connectBtn.style.display = 'none';
+                disconnectBtn.style.display = 'block';
+                portSelect.disabled = true;
+            } else {
+                dot.className = 'status-dot disconnected';
+                text.textContent = 'Disconnected';
+                connectBtn.style.display = 'block';
+                disconnectBtn.style.display = 'none';
+                portSelect.disabled = false;
+            }
+        }
+
+        async function move() {
+            if (!connected) {
+                showToast('Please connect to a serial port first', 'error');
+                return;
+            }
+
+            const positions = {};
+            servos.forEach(id => {
+                positions[id] = parseInt(document.getElementById(`slider${id}`).value);
+            });
+
+            const speed = parseInt(document.getElementById('speedInput').value);
+            const acceleration = parseInt(document.getElementById('accInput').value);
+
+            try {
+                const response = await fetch('/api/move', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ positions, speed, acceleration })
+                });
+                const data = await response.json();
+                
+                if (data.success) {
+                    showToast(data.message, 'success');
+                } else {
+                    showToast(data.message, 'error');
+                }
+            } catch (error) {
+                showToast('Move failed: ' + error.message, 'error');
+            }
+        }
+
+        async function emergencyStop() {
+            if (!connected) {
+                showToast('Please connect to a serial port first', 'error');
+                return;
+            }
+
+            if (!confirm('WARNING: This will disable torque on all servos. Are you sure?')) {
+                return;
+            }
+
+            try {
+                const response = await fetch('/api/emergency_stop', {
+                    method: 'POST'
+                });
+                const data = await response.json();
+                
+                if (data.success) {
+                    showToast(data.message, 'error');
+                } else {
+                    showToast(data.message, 'error');
+                }
+            } catch (error) {
+                showToast('Emergency stop failed: ' + error.message, 'error');
+            }
+        }
+
+        function applyPreset(preset) {
+            const presets = {
+                1: { 2: 4095, 3: 3840, 4: 3584, 5: 3328, 6: 3072, 7: 2816, 8: 2560, 9: 2304, 10: 2048, 11: 1792 },
+                2: { 2: 0, 3: 256, 4: 512, 5: 768, 6: 1024, 7: 1280, 8: 1536, 9: 1792, 10: 2048, 11: 2304 },
+                3: { 2: 2048, 3: 2048, 4: 2048, 5: 2048, 6: 2048, 7: 2048, 8: 2048, 9: 2048, 10: 2048, 11: 2048 }
+            };
+
+            const positions = presets[preset];
+            servos.forEach(id => {
+                document.getElementById(`slider${id}`).value = positions[id];
+                updateSlider(id);
+            });
+            showToast(`Preset ${preset} applied`, 'info');
+        }
+
+        function resetAll() {
+            servos.forEach(id => {
+                document.getElementById(`slider${id}`).value = 2048;
+                updateSlider(id);
+            });
+            document.getElementById('speedInput').value = 2400;
+            document.getElementById('accInput').value = 50;
+            showToast('All settings reset', 'info');
+        }
+
+        async function startCamera() {
+            try {
+                const response = await fetch('/api/camera/start', {
+                    method: 'POST'
+                });
+                const data = await response.json();
+                
+                if (data.success) {
+                    cameraActive = true;
+                    updateCameraStatus(true);
+                    showToast('Camera started', 'success');
+                    
+                    const container = document.getElementById('cameraContainer');
+                    container.innerHTML = `
+                        <img src="/video_feed" alt="Camera Feed">
+                        <div class="camera-status" id="cameraStatus">Live</div>
+                    `;
+                } else {
+                    showToast(data.message, 'error');
+                }
+            } catch (error) {
+                showToast('Failed to start camera: ' + error.message, 'error');
+            }
+        }
+
+        async function stopCamera() {
+            try {
+                const response = await fetch('/api/camera/stop', {
+                    method: 'POST'
+                });
+                const data = await response.json();
+                
+                if (data.success) {
+                    cameraActive = false;
+                    updateCameraStatus(false);
+                    showToast('Camera stopped', 'info');
+                    
+                    const container = document.getElementById('cameraContainer');
+                    container.innerHTML = `
+                        <div class="camera-placeholder">
+                            <div>📷 Camera Not Active</div>
+                            <div style="font-size: 0.8rem; margin-top: 10px;">Click "Start Camera" to view live feed</div>
+                        </div>
+                    `;
+                }
+            } catch (error) {
+                showToast('Failed to stop camera: ' + error.message, 'error');
+            }
+        }
+
+        function updateCameraStatus(isActive) {
+            const startBtn = document.getElementById('cameraStartBtn');
+            const stopBtn = document.getElementById('cameraStopBtn');
+
+            if (isActive) {
+                startBtn.style.display = 'none';
+                stopBtn.style.display = 'block';
+            } else {
+                startBtn.style.display = 'block';
+                stopBtn.style.display = 'none';
+            }
+        }
+
+        document.getElementById('connectBtn').addEventListener('click', connect);
+        document.getElementById('disconnectBtn').addEventListener('click', disconnect);
+        document.getElementById('moveBtn').addEventListener('click', move);
+        document.getElementById('emergencyBtn').addEventListener('click', emergencyStop);
+        document.getElementById('preset1Btn').addEventListener('click', () => applyPreset(1));
+        document.getElementById('preset2Btn').addEventListener('click', () => applyPreset(2));
+        document.getElementById('preset3Btn').addEventListener('click', () => applyPreset(3));
+        document.getElementById('resetBtn').addEventListener('click', resetAll);
+        document.getElementById('cameraStartBtn').addEventListener('click', startCamera);
+        document.getElementById('cameraStopBtn').addEventListener('click', stopCamera);
+        document.getElementById('logoutBtn').addEventListener('click', async () => {
+            try {
+                const response = await fetch('/api/auth/logout', {
+                    method: 'POST'
+                });
+                const data = await response.json();
+                if (data.success) {
+                    showToast(data.message, 'info');
+                    setTimeout(() => {
+                        window.location.href = '/';
+                    }, 1000);
+                }
+            } catch (error) {
+                showToast('Logout failed: ' + error.message, 'error');
+            }
+        });
+
+        function updateSystemTime() {
+            const now = new Date();
+            const time = now.toLocaleTimeString('en-US', { hour12: false });
+            const date = now.toLocaleDateString('en-US', { 
+                year: 'numeric', 
+                month: '2-digit', 
+                day: '2-digit',
+                weekday: 'short'
+            });
+            document.getElementById('systemTime').textContent = time;
+            document.getElementById('systemDate').textContent = date;
+        }
+
+        async function loadSystemStatus() {
+            try {
+                const response = await fetch('/api/status');
+                const data = await response.json();
+
+                const motorStatusValue = document.getElementById('motorStatusValue');
+                const connectedCount = data.connected ? servos.length : 0;
+                motorStatusValue.textContent = connectedCount + '/' + servos.length + ' Connected';
+
+                if (data.current_positions) {
+                    servos.forEach(id => {
+                        const posEl = document.getElementById(`motorPos${id}`);
+                        const statusEl = document.getElementById(`motorStatus${id}`);
+                        const pos = data.current_positions[id];
+                        const displayPos = (pos !== undefined && pos >= 0) ? pos : '--';
+                        if (posEl) posEl.textContent = displayPos;
+                        if (statusEl) {
+                            statusEl.className = 'motor-status ' + (data.connected ? 'connected' : 'disconnected');
+                        }
+                    });
+                }
+            } catch (error) {
+                console.error('Failed to load system status:', error);
+            }
+        }
+
+        async function loadBatteryTemp() {
+            try {
+                const response = await fetch('/api/system_status');
+                const data = await response.json();
+
+                const batteryValue = document.getElementById('batteryValue');
+                const tempValue = document.getElementById('tempValue');
+
+                if (data.battery.percent >= 0) {
+                    batteryValue.textContent = `${data.battery.percent}%`;
+                    batteryValue.className = 'status-card-value ' +
+                        (data.battery.percent >= 60 ? 'battery-high' :
+                         data.battery.percent >= 20 ? 'battery-medium' : 'battery-low');
+                } else {
+                    batteryValue.textContent = 'N/A';
+                    batteryValue.className = 'status-card-value';
+                }
+
+                if (data.temperature.value >= 0) {
+                    tempValue.textContent = `${data.temperature.value}°C`;
+                    tempValue.className = 'status-card-value ' +
+                        (data.temperature.value <= 45 ? 'temp-normal' :
+                         data.temperature.value <= 60 ? 'temp-warning' : 'temp-danger');
+                } else {
+                    tempValue.textContent = 'N/A';
+                    tempValue.className = 'status-card-value';
+                }
+            } catch (error) {
+                console.error('Failed to load battery/temp:', error);
+            }
+        }
+
+        async function loadLlmConfig() {
+            try {
+                const response = await fetch('/api/llm/config');
+                const data = await response.json();
+                
+                if (data.success && data.config) {
+                    document.getElementById('llmVoice').value = data.config.voice || 'male';
+                    document.getElementById('llmModel').value = data.config.model || 'gpt-4';
+                    document.getElementById('llmPrompt').value = data.config.prompt || '';
+                }
+            } catch (error) {
+                console.error('Failed to load LLM config:', error);
+            }
+        }
+
+        async function saveLlmConfig() {
+            const config = {
+                voice: document.getElementById('llmVoice').value,
+                model: document.getElementById('llmModel').value,
+                prompt: document.getElementById('llmPrompt').value
+            };
+            
+            try {
+                const response = await fetch('/api/llm/config', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(config)
+                });
+                const data = await response.json();
+                
+                if (data.success) {
+                    showToast(data.message, 'success');
+                } else {
+                    showToast(data.message, 'error');
+                }
+            } catch (error) {
+                showToast('Failed to save LLM config: ' + error.message, 'error');
+            }
+        }
+
+        document.getElementById('saveLlmConfigBtn').addEventListener('click', saveLlmConfig);
+
+        loadPorts();
+        loadLlmConfig();
+        updateSystemTime();
+        setInterval(updateSystemTime, 1000);
+
+        // ---- Sinusoidal motion control ----
+        async function startSinMotion() {
+            if (!connected) {
+                showToast('Not connected', 'error');
+                return;
+            }
+            const payload = {};
+            servos.forEach(id => {
+                const en = document.getElementById(`sinEn${id}`).checked;
+                const amp = parseInt(document.getElementById(`sinAmp${id}`).value) || 0;
+                const freq = parseFloat(document.getElementById(`sinFreq${id}`).value) || 0.01;
+                payload[id] = { enabled: en, amplitude: amp, frequency: freq };
+            });
+            try {
+                const resp = await fetch('/api/sin_motion/start', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+                const data = await resp.json();
+                if (data.success) {
+                    document.getElementById('sinStatusDot').classList.add('active');
+                    showToast('Sin motion started', 'success');
+                } else {
+                    showToast(data.message, 'error');
+                }
+            } catch (e) {
+                showToast('Failed to start sin motion: ' + e.message, 'error');
+            }
+        }
+
+        async function stopSinMotion() {
+            try {
+                const resp = await fetch('/api/sin_motion/stop', { method: 'POST' });
+                const data = await resp.json();
+                if (data.success) {
+                    document.getElementById('sinStatusDot').classList.remove('active');
+                    showToast('Sin motion paused', 'info');
+                }
+            } catch (e) {
+                showToast('Failed to stop: ' + e.message, 'error');
+            }
+        }
+
+        document.getElementById('sinStartBtn').addEventListener('click', startSinMotion);
+        document.getElementById('sinStopBtn').addEventListener('click', stopSinMotion);
+
+        // ---- Emotion actions (行为动作) + joint bar animation ----
+        const JOINT_META = {
+            2:  { label: 'Tail 尾巴' },
+            3:  { label: 'R Hip 右髋' },
+            4:  { label: 'R Knee 右膝' },
+            5:  { label: 'R Ankle 右踝' },
+            6:  { label: 'L Hip 左髋' },
+            7:  { label: 'L Knee 左膝' },
+            8:  { label: 'L Ankle 左踝' },
+            9:  { label: 'Head Yaw 头转' },
+            10: { label: 'Head Pitch 头俯仰' },
+            11: { label: 'Mouth 嘴巴' },
+        };
+        const EMOTION_NAMES = {
+            idle: '💤 Idle 待机',
+            happy: '😊 Happy 开心',
+            calm: '😌 Calm 冷静',
+            enthusiastic: '🤗 Enthusiastic 热情',
+        };
+        const EMOTION_JOINT_SETS = {
+            idle: [2, 3, 4, 5, 6, 7, 8, 9, 10, 11],
+            happy: [2, 3, 4, 5, 6, 7, 8, 9, 10, 11],
+            calm: [9, 10, 11],
+            enthusiastic: [3, 4, 5, 6, 7, 8],
+        };
+
+        // Generate the joint bar rows (杆状动画)
+        (function generateJointBars() {
+            const wrap = document.getElementById('jointBars');
+            servos.forEach(id => {
+                const meta = JOINT_META[id];
+                const row = document.createElement('div');
+                row.className = 'joint-bar-row';
+                row.id = `jointRow${id}`;
+                row.innerHTML = `
+                    <div class="joint-bar-id">${id}</div>
+                    <div class="joint-bar-label">${meta.label}</div>
+                    <div class="joint-bar-track">
+                        <div class="joint-bar-center"></div>
+                        <div class="joint-bar-fill" id="jointFill${id}" style="width: 50%"></div>
+                        <div class="joint-bar-knob" id="jointKnob${id}" style="left: 50%"></div>
+                    </div>
+                    <div class="joint-bar-value" id="jointVal${id}">2048</div>`;
+                wrap.appendChild(row);
+            });
+        })();
+
+        let emotionPollTimer = null;
+
+        function setEmotionButtonsActive(action) {
+            document.querySelectorAll('.btn-emotion').forEach(b => {
+                b.classList.toggle('active', b.dataset.action === action);
+            });
+        }
+
+        function resetJointBars() {
+            servos.forEach(id => {
+                const knob = document.getElementById(`jointKnob${id}`);
+                const fill = document.getElementById(`jointFill${id}`);
+                const val = document.getElementById(`jointVal${id}`);
+                const row = document.getElementById(`jointRow${id}`);
+                if (knob) knob.style.left = '50%';
+                if (fill) fill.style.width = '50%';
+                if (val) val.textContent = '2048';
+                if (row) row.classList.remove('active');
+            });
+        }
+
+        function updateJointBars(data) {
+            const active = EMOTION_JOINT_SETS[data.action] || [];
+            servos.forEach(id => {
+                const pos = (data.positions && data.positions[id] !== undefined)
+                    ? data.positions[id] : 2048;
+                const knob = document.getElementById(`jointKnob${id}`);
+                const fill = document.getElementById(`jointFill${id}`);
+                const val = document.getElementById(`jointVal${id}`);
+                const row = document.getElementById(`jointRow${id}`);
+                const pct = Math.max(0, Math.min(100, pos / 4095 * 100));
+                if (knob) knob.style.left = pct + '%';
+                if (fill) fill.style.width = pct + '%';
+                if (val) val.textContent = pos;
+                if (row) row.classList.toggle('active', active.includes(id));
+            });
+        }
+
+        function setEmotionRunningUI(running, action, driveRobot, sound, soundName) {
+            document.getElementById('emotionStatusDot').classList.toggle('active', running);
+            document.getElementById('emotionDriveRobot').disabled = running;
+            const line = document.getElementById('emotionStatusLine');
+            if (running) {
+                const mode = driveRobot ? 'Direct Drive 直接驱动+动画' : 'Animation Only 仅动画';
+                const snd = sound ? ` · 🔊 ${soundName}` : ' · 🔇 silent';
+                line.textContent = `${EMOTION_NAMES[action] || action} running · ${mode}${snd}`;
+            } else {
+                line.textContent = 'Idle — pick an action · 空闲，请选择动作';
+            }
+        }
+
+        function startEmotionPolling() {
+            if (emotionPollTimer) clearTimeout(emotionPollTimer);
+            const poll = async () => {
+                try {
+                    const resp = await fetch('/api/emotion/status');
+                    const data = await resp.json();
+                    updateJointBars(data);
+                    setEmotionRunningUI(data.running, data.action, data.drive_robot, data.sound, data.sound_name);
+                    if (data.running) {
+                        emotionPollTimer = setTimeout(poll, 100);
+                    } else {
+                        emotionPollTimer = null;
+                        resetJointBars();
+                        setEmotionButtonsActive(null);
+                    }
+                } catch (e) {
+                    emotionPollTimer = null;
+                }
+            };
+            poll();
+        }
+
+        async function startEmotion(action) {
+            const driveRobot = document.getElementById('emotionDriveRobot').checked;
+            try {
+                const resp = await fetch('/api/emotion/start', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ action, drive_robot: driveRobot })
+                });
+                const data = await resp.json();
+                if (data.success) {
+                    setEmotionButtonsActive(action);
+                    setEmotionRunningUI(true, action, driveRobot);
+                    showToast(data.message, 'success');
+                    startEmotionPolling();
+                } else {
+                    showToast(data.message, 'error');
+                }
+            } catch (e) {
+                showToast('Failed to start action: ' + e.message, 'error');
+            }
+        }
+
+        async function stopEmotion() {
+            try {
+                await fetch('/api/emotion/stop', { method: 'POST' });
+                if (emotionPollTimer) {
+                    clearTimeout(emotionPollTimer);
+                    emotionPollTimer = null;
+                }
+                resetJointBars();
+                setEmotionButtonsActive(null);
+                setEmotionRunningUI(false, null, false);
+                showToast('Emotion action stopped', 'info');
+            } catch (e) {
+                showToast('Failed to stop: ' + e.message, 'error');
+            }
+        }
+
+        document.querySelectorAll('.btn-emotion').forEach(btn => {
+            btn.addEventListener('click', () => startEmotion(btn.dataset.action));
+        });
+        document.getElementById('emotionStopBtn').addEventListener('click', stopEmotion);
+
+        document.getElementById('emotionDriveRobot').addEventListener('change', (e) => {
+            const on = e.target.checked;
+            document.getElementById('emotionDriveLabel').textContent =
+                on ? 'Direct Drive 直接驱动机器人' : 'Animation Only 仅动画';
+            document.getElementById('emotionDriveHint').textContent = on
+                ? 'ON: real servos move together with the animation · 机器人与动画同步运动'
+                : 'OFF: only the on-screen animation moves · 开关打开后同时驱动机器人';
+        });
+
+        // ---- Servo ID scan ----
+        async function scanServoIds() {
+            const btn = document.getElementById('scanIdsBtn');
+            const area = document.getElementById('scanResultArea');
+            btn.disabled = true;
+            btn.textContent = 'Scanning...';
+            area.innerHTML = '<div class="scan-progress">Pinging IDs 1-30... (this may take a few seconds)</div>';
+
+            try {
+                const response = await fetch('/api/scan_ids', { method: 'POST' });
+                const data = await response.json();
+
+                if (data.success && data.found_ids && data.found_ids.length > 0) {
+                    const ids = data.found_ids;
+                    let chips = '<div class="scan-id-list">';
+                    ids.forEach(id => {
+                        chips += `<div class="scan-id-chip">ID: ${id}</div>`;
+                    });
+                    chips += '</div>';
+                    area.innerHTML = `
+                        <div style="margin-bottom:10px;font-size:0.9rem;color:var(--success)">
+                            Found ${ids.length} servo(s) @ ${data.baud} baud:
+                        </div>` + chips;
+                    showToast(`Found ${ids.length} servo(s)!`, 'success');
+                } else {
+                    area.innerHTML = `
+                        <div style="color:var(--warning);margin-bottom:8px;">⚠ No servos detected</div>
+                        <div style="font-size:0.75rem;color:var(--text-muted);line-height:1.4;">
+                            ${data.message || 'No response at current baud rate.'}<br>
+                            <strong>Checklist:</strong><br>
+                            1. Ensure servos have external power (6-12V)<br>
+                            2. Verify TX/RX connections (TX→RX, RX→TX)<br>
+                            3. Try a different serial port<br>
+                            4. Servo baud rate may differ (default: 1M, try 115200)<br>
+                            5. If using half-duplex bus, ensure direction control
+                        </div>
+                        <button id="diagBtn" style="margin-top:10px;padding:6px 12px;background:var(--primary-light);color:white;border:none;border-radius:6px;cursor:pointer;font-size:0.75rem;">🔍 Run Serial Diagnostics</button>
+                    `;
+                    showToast('No servos found. Check power/wiring.', 'error');
+                    document.getElementById('diagBtn')?.addEventListener('click', runSerialDiagnostics);
+                }
+            } catch (e) {
+                area.innerHTML = `<div class="scan-placeholder" style="color:var(--error)">Error: ${e.message}</div>`;
+            } finally {
+                btn.disabled = false;
+                btn.textContent = 'Start Scan';
+            }
+        }
+
+        async function runSerialDiagnostics() {
+            const area = document.getElementById('scanResultArea');
+            area.innerHTML = '<div class="scan-progress">Testing serial communication at multiple baud rates on both ports...<br>This may take ~30 seconds</div>';
+
+            const ports = ['/dev/ttyACM0', '/dev/ttyACM1'];
+            let results = '';
+
+            for (const port of ports) {
+                try {
+                    const resp = await fetch('/api/serial/diagnose', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ port, servo_id: servos[0] })
+                    });
+                    const data = await resp.json();
+                    
+                    const testsHtml = (data.tests || []).map(t => {
+                        if (t.error) return `  <span style="color:var(--error)">${t.baud} baud: ERROR - ${t.error}</span>`;
+                        return `  ${t.baud} baud: ${t.ping_ok ? '<span style="color:var(--success)">✓ RESPONSE</span>' : '<span style="color:var(--text-muted)">✗ No response</span>'}`;
+                    }).join('<br>');
+                    
+                    const hwChecks = data.hardware_checks || {};
+                    results += `
+                        <div style="margin-bottom:15px;padding:12px;background:rgba(255,255,255,0.03);border-radius:8px;border:1px solid var(--dark-border);">
+                            <div style="font-weight:600;margin-bottom:8px;color:var(--text)">🔌 ${port}</div>
+                            <div style="font-family:'JetBrains Mono',monospace;font-size:0.75rem;line-height:1.6;">${testsHtml}</div>
+                            ${data.overall_success ? 
+                                `<div style="margin-top:8px;padding:6px;background:rgba(34,197,94,0.1);border-radius:4px;color:var(--success);font-size:0.8rem;">${data.diagnosis || 'Working!'}</div>` : 
+                                `<div style="margin-top:8px;padding:6px;background:rgba(239,68,68,0.1);border-radius:4px;color:var(--error);font-size:0.8rem;">${data.diagnosis || 'No response'}</div>`
+                            }
+                            ${data.recommendation ? `<div style="margin-top:4px;font-size:0.75rem;color:var(--warning);">💡 ${data.recommendation}</div>` : ''}
+                        </div>`;
+                } catch (e) {
+                    results += `<div style="color:var(--error);margin-bottom:10px;">${port}: Failed to run diagnostics - ${e.message}</div>`;
+                }
+            }
+            area.innerHTML = results;
+        }
+
+        document.getElementById('scanIdsBtn').addEventListener('click', scanServoIds);
+
+        // ---- Audio test panel (speaker & microphone) ----
+        let audioPollingTimer = null;
+        let lastShownRecordAt = 0;
+
+        // Fetch detected audio devices on page load and display them
+        async function loadAudioDeviceInfo() {
+            try {
+                const resp = await fetch('/api/audio/status');
+                const data = await resp.json();
+                if (data.success) {
+                    const el = document.getElementById('audioDeviceInfo');
+                    el.innerHTML = `🎤 Mic: <span>${data.mic_device}</span> (${data.mic_label})<br>🔊 Speaker: <span>${data.speaker_device}</span> (${data.speaker_label})`;
+                }
+            } catch (e) {
+                document.getElementById('audioDeviceInfo').textContent = 'Could not detect audio devices';
+            }
+        }
+        loadAudioDeviceInfo();
+
+        // ---- Volume control ----
+        let speakerVolTimer = null;
+        const speakerSlider = document.getElementById('speakerVol');
+        const speakerVal = document.getElementById('speakerVolVal');
+
+        // Load current speaker volume on page load
+        (async function loadSpeakerVolume() {
+            try {
+                const resp = await fetch('/api/audio/volume');
+                const data = await resp.json();
+                if (data.success) {
+                    speakerSlider.value = data.volume;
+                    speakerVal.textContent = data.volume + '%';
+                }
+            } catch (e) {
+                speakerVal.textContent = 'N/A';
+            }
+        })();
+
+        // Speaker volume: debounced POST to set ALSA PCM volume
+        speakerSlider.addEventListener('input', () => {
+            const vol = parseInt(speakerSlider.value);
+            speakerVal.textContent = vol + '%';
+            clearTimeout(speakerVolTimer);
+            speakerVolTimer = setTimeout(async () => {
+                try {
+                    await fetch('/api/audio/volume', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ volume: vol })
+                    });
+                } catch (e) { /* ignore */ }
+            }, 200);
+        });
+
+        async function playAnimalSound(animal) {
+            const resultEl = document.getElementById('audioResult');
+            try {
+                document.querySelectorAll('.btn-animal').forEach(b => b.disabled = true);
+                resultEl.innerHTML = `<div class="audio-progress">🔊 Playing ${animal} sound...</div>`;
+                document.getElementById('audioStatusDot').classList.add('active');
+                const resp = await fetch(`/api/audio/play/${animal}`, { method: 'POST' });
+                const data = await resp.json();
+                if (!data.success) {
+                    resultEl.innerHTML = `<div class="audio-placeholder" style="color:var(--error)">${data.message}</div>`;
+                    document.getElementById('audioStatusDot').classList.remove('active');
+                    document.querySelectorAll('.btn-animal').forEach(b => b.disabled = false);
+                    return;
+                }
+                pollAudioStatus();
+            } catch (e) {
+                showToast('Playback failed: ' + e.message, 'error');
+                document.getElementById('audioStatusDot').classList.remove('active');
+                resultEl.innerHTML = `<div class="audio-placeholder" style="color:var(--error)">Error: ${e.message}</div>`;
+            } finally {
+                // Re-enable animal buttons after playback (cry/cackle ~1.2s, whistle ~0.8s)
+                setTimeout(() => {
+                    document.querySelectorAll('.btn-animal').forEach(b => b.disabled = false);
+                }, 1400);
+            }
+        }
+
+        async function startRecording() {
+            const duration = parseInt(document.getElementById('recDuration').value) || 3;
+            const btn = document.getElementById('recordBtn');
+            const resultEl = document.getElementById('audioResult');
+            btn.disabled = true;
+            btn.textContent = '⏺ Recording...';
+            resultEl.innerHTML = `<div class="audio-recording-active">🎤 Recording for ${duration}s...</div>`;
+            document.getElementById('audioStatusDot').classList.add('active');
+
+            try {
+                const resp = await fetch('/api/audio/record', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ duration })
+                });
+                const data = await resp.json();
+                if (data.success) {
+                    pollAudioStatus();
+                } else {
+                    resultEl.innerHTML = `<div class="audio-placeholder" style="color:var(--error)">${data.message}</div>`;
+                    document.getElementById('audioStatusDot').classList.remove('active');
+                }
+            } catch (e) {
+                showToast('Recording failed: ' + e.message, 'error');
+                resultEl.innerHTML = `<div class="audio-placeholder" style="color:var(--error)">Error: ${e.message}</div>`;
+                document.getElementById('audioStatusDot').classList.remove('active');
+            } finally {
+                btn.disabled = false;
+                btn.textContent = '⏺ Start Recording';
+            }
+        }
+
+        async function stopAudio() {
+            try {
+                await fetch('/api/audio/stop', { method: 'POST' });
+                document.getElementById('audioStatusDot').classList.remove('active');
+                if (audioPollingTimer) {
+                    clearTimeout(audioPollingTimer);
+                    audioPollingTimer = null;
+                }
+                // After explicit stop, refresh status once so we can still
+                // pick up any partial recording file.
+                pollAudioStatus();
+            } catch (e) {
+                // ignore
+            }
+        }
+
+        function pollAudioStatus() {
+            if (audioPollingTimer) clearTimeout(audioPollingTimer);
+
+            const poll = async () => {
+                try {
+                    const resp = await fetch('/api/audio/status');
+                    const data = await resp.json();
+                    const resultEl = document.getElementById('audioResult');
+                    const dot = document.getElementById('audioStatusDot');
+
+                    // If a new recording has just completed, render its playback UI.
+                    if (data.last_record_file && data.last_record_at > lastShownRecordAt) {
+                        lastShownRecordAt = data.last_record_at;
+                        const filename = data.last_record_file.split('/').pop();
+                        const url = `/api/audio/wav/${filename}`;
+                        resultEl.innerHTML = `
+                            <div class="audio-playback">
+                                <div class="audio-playback-label">✅ Recording complete — click play to listen</div>
+                                <audio controls preload="auto"></audio>
+                                <div class="audio-download-row">
+                                    <a class="audio-download-link" href="${url}" download="${filename}">⬇ Download ${filename}</a>
+                                </div>
+                            </div>`;
+                        // Explicitly set src + load() after DOM insertion — dynamically
+                        // inserted <audio> elements via innerHTML don't always auto-load.
+                        const audioEl = resultEl.querySelector('audio');
+                        if (audioEl) {
+                            audioEl.src = url;
+                            audioEl.load();
+                            audioEl.onerror = () => {
+                                resultEl.querySelector('.audio-download-row').insertAdjacentHTML(
+                                    'beforebegin',
+                                    '<div class="audio-error">⚠ Audio failed to load in browser. Use the download link to play externally.</div>'
+                                );
+                            };
+                            audioEl.addEventListener('canplay', () => {
+                                const label = resultEl.querySelector('.audio-playback-label');
+                                if (label) label.textContent = '✅ Recording ready — click play to listen';
+                            });
+                        }
+                    }
+
+                    if (data.running) {
+                        dot.classList.add('active');
+                        if (data.operation === 'play' && data.animal) {
+                            resultEl.innerHTML = `<div class="audio-progress">🔊 Playing ${data.animal} sound... (${data.elapsed.toFixed(1)}s / ${data.duration.toFixed(1)}s)</div>`;
+                        } else if (data.operation === 'record') {
+                            const remaining = Math.max(0, data.duration - data.elapsed);
+                            resultEl.innerHTML = `<div class="audio-recording-active">🎤 Recording... ${remaining.toFixed(1)}s remaining</div>`;
+                        }
+                        audioPollingTimer = setTimeout(poll, 250);
+                    } else {
+                        dot.classList.remove('active');
+                        if (!data.last_record_file || data.last_record_at <= lastShownRecordAt) {
+                            // No new recording to show — clear to idle placeholder
+                            // only if the result area currently shows a progress message.
+                            if (resultEl.querySelector('.audio-progress') || resultEl.querySelector('.audio-recording-active')) {
+                                resultEl.innerHTML = `<div class="audio-placeholder">Playback complete. Click an animal to play again.</div>`;
+                            }
+                        }
+                        audioPollingTimer = null;
+                    }
+                } catch (e) {
+                    audioPollingTimer = null;
+                }
+            };
+            poll();
+        }
+
+        document.querySelectorAll('.btn-animal').forEach(btn => {
+            btn.addEventListener('click', () => playAnimalSound(btn.dataset.animal));
+        });
+        document.getElementById('recordBtn').addEventListener('click', startRecording);
+        document.getElementById('audioStopBtn').addEventListener('click', stopAudio);
+
+        async function fetchPositions() {
+            try {
+                const response = await fetch('/api/read_positions');
+                const data = await response.json();
+
+                if (data.connected !== connected) {
+                    connected = data.connected;
+                    updateStatus(connected);
+                }
+
+                const motorStatusValue = document.getElementById('motorStatusValue');
+                const connectedCount = data.connected ? servos.length : 0;
+                motorStatusValue.textContent = connectedCount + '/' + servos.length + ' Connected';
+
+                if (data.current_positions) {
+                    let anyOk = false;
+                    servos.forEach(id => {
+                        const pos = data.current_positions[id];
+                        const validPos = (pos !== undefined && pos >= 0);
+                        // read_feedback_ok indicates whether the position came from hardware
+                        // feedback (true) or is a fallback to the commanded target (false).
+                        const feedbackOk = data.read_feedback_ok ? data.read_feedback_ok[id] : false;
+                        if (feedbackOk) anyOk = true;
+
+                        if (validPos) {
+                            const curEl = document.getElementById(`current${id}`);
+                            // Append '*' to indicate the value is a target fallback,
+                            // not live hardware feedback.
+                            curEl.textContent = validPos ? pos : '--';
+                            curEl.style.color = feedbackOk ? '' : 'var(--warning)';
+                            curEl.title = feedbackOk ? 'Live hardware position' : 'Target position (no hardware feedback)';
+                        }
+
+                        const posEl = document.getElementById(`motorPos${id}`);
+                        const statusEl = document.getElementById(`motorStatus${id}`);
+                        if (posEl) {
+                            posEl.textContent = validPos ? pos : '--';
+                            posEl.style.color = feedbackOk ? 'var(--success)' : 'var(--warning)';
+                            posEl.title = feedbackOk ? 'Live hardware position' : 'Target position (no hardware feedback)';
+                        }
+                        if (statusEl) {
+                            statusEl.className = 'motor-status ' + (data.connected ? 'connected' : 'disconnected');
+                        }
+                    });
+                    anyFeedbackOk = anyOk;
+                }
+            } catch (error) {
+                console.error('Failed to fetch positions:', error);
+            }
+        }
+
+        // Adaptive polling: poll frequently when hardware feedback is available,
+        // but back off (3s) when only fallback/target positions are shown so
+        // that slider-driven move commands never get blocked by read requests.
+        let positionsTimer = null;
+        let anyFeedbackOk = false;
+        function scheduleFetchPositions() {
+            const interval = anyFeedbackOk ? 500 : 3000;
+            positionsTimer = setTimeout(() => {
+                fetchPositions().finally(scheduleFetchPositions);
+            }, interval);
+        }
+        scheduleFetchPositions();
+
+        setInterval(loadBatteryTemp, 2000);
+
+        // ---- Video recording panel ----
+        let videoRecPollTimer = null;
+
+        async function startVideoRecording() {
+            const duration = parseInt(document.getElementById('videoDuration').value) || 30;
+            const btn = document.getElementById('videoRecordStartBtn');
+            const stopBtn = document.getElementById('videoRecordStopBtn');
+            const timer = document.getElementById('videoRecordTimer');
+            const statusLine = document.getElementById('videoRecordStatusLine');
+
+            btn.disabled = true;
+            try {
+                const resp = await fetch('/api/camera/record/start', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ duration })
+                });
+                const data = await resp.json();
+                if (data.success) {
+                    statusLine.textContent = `🔴 Recording... (max ${duration}s)`;
+                    statusLine.classList.add('active');
+                    btn.style.display = 'none';
+                    stopBtn.style.display = '';
+                    timer.classList.add('recording');
+                    startVideoRecordPolling();
+                } else {
+                    statusLine.textContent = '❌ ' + data.message;
+                    btn.disabled = false;
+                }
+            } catch (e) {
+                statusLine.textContent = '❌ Error: ' + e.message;
+                btn.disabled = false;
+            }
+        }
+
+        async function stopVideoRecording() {
+            const btn = document.getElementById('videoRecordStartBtn');
+            const stopBtn = document.getElementById('videoRecordStopBtn');
+            const timer = document.getElementById('videoRecordTimer');
+            const statusLine = document.getElementById('videoRecordStatusLine');
+
+            stopBtn.disabled = true;
+            try {
+                const resp = await fetch('/api/camera/record/stop', { method: 'POST' });
+                const data = await resp.json();
+                if (data.success) {
+                    statusLine.textContent = '✅ Recording saved to clips list';
+                    statusLine.classList.remove('active');
+                }
+            } catch (e) {
+                statusLine.textContent = '❌ Error stopping: ' + e.message;
+            } finally {
+                btn.disabled = false;
+                btn.style.display = '';
+                stopBtn.style.display = 'none';
+                stopBtn.disabled = false;
+                timer.classList.remove('recording');
+                timer.textContent = '0.0s';
+                if (videoRecPollTimer) {
+                    clearInterval(videoRecPollTimer);
+                    videoRecPollTimer = null;
+                }
+                loadVideoClips();
+            }
+        }
+
+        function startVideoRecordPolling() {
+            videoRecPollTimer = setInterval(async () => {
+                try {
+                    const resp = await fetch('/api/camera/record/status');
+                    const data = await resp.json();
+                    const timer = document.getElementById('videoRecordTimer');
+                    if (data.recording) {
+                        timer.textContent = data.elapsed.toFixed(1) + 's';
+                    } else {
+                        clearInterval(videoRecPollTimer);
+                        videoRecPollTimer = null;
+                    }
+                } catch (e) {
+                    clearInterval(videoRecPollTimer);
+                    videoRecPollTimer = null;
+                }
+            }, 200);
+        }
+
+        async function loadVideoClips() {
+            try {
+                const resp = await fetch('/api/camera/clips');
+                const data = await resp.json();
+                const listEl = document.getElementById('videoClipsList');
+                if (!data.success || data.clips.length === 0) {
+                    listEl.innerHTML = '<div class="video-clips-placeholder">No video clips recorded yet</div>';
+                    return;
+                }
+                listEl.innerHTML = data.clips.map(clip => `
+                    <div class="video-clip-item">
+                        <div class="video-clip-info">
+                            <div class="video-clip-name">${clip.filename}</div>
+                            <div class="video-clip-meta">${formatSize(clip.size)} · ${clip.modified}</div>
+                        </div>
+                        <div class="video-clip-actions">
+                            <a class="video-clip-btn" href="/api/camera/clip/${encodeURIComponent(clip.filename)}" download="${clip.filename}">⬇ Download</a>
+                            <button class="video-clip-btn" onclick="playClip('${clip.filename}')">▶ Play</button>
+                            <button class="video-clip-btn danger" onclick="deleteClip('${clip.filename}')">🗑</button>
+                        </div>
+                    </div>
+                `).join('');
+            } catch (e) {
+                document.getElementById('videoClipsList').innerHTML =
+                    '<div class="video-clips-placeholder" style="color:var(--error)">Failed to load clips</div>';
+            }
+        }
+
+        function formatSize(bytes) {
+            if (bytes < 1024) return bytes + ' B';
+            if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB';
+            return (bytes / (1024 * 1024)).toFixed(1) + ' MB';
+        }
+
+        async function deleteClip(filename) {
+            if (!confirm(`Delete ${filename}?`)) return;
+            try {
+                const resp = await fetch(`/api/camera/clip/${encodeURIComponent(filename)}/delete`, { method: 'POST' });
+                const data = await resp.json();
+                if (data.success) {
+                    loadVideoClips();
+                } else {
+                    showToast('Delete failed', 'error');
+                }
+            } catch (e) {
+                showToast('Delete error: ' + e.message, 'error');
+            }
+        }
+
+        function playClip(filename) {
+            const url = `/api/camera/clip/${encodeURIComponent(filename)}`;
+            window.open(url, '_blank');
+        }
+
+        document.getElementById('videoRecordStartBtn').addEventListener('click', startVideoRecording);
+        document.getElementById('videoRecordStopBtn').addEventListener('click', stopVideoRecording);
+        loadVideoClips();
+        setInterval(loadVideoClips, 10000);
+
+        // ---- Face detection panel ----
+        let faceDetectPollTimer = null;
+        let faceDetectMethod = 'unknown';
+
+        document.getElementById('faceDetectToggle').addEventListener('change', async (e) => {
+            const enabled = e.target.checked;
+            try {
+                const resp = await fetch('/api/face/detection', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ enabled })
+                });
+                const data = await resp.json();
+                if (data.success) {
+                    faceDetectMethod = data.method || faceDetectMethod;
+                    updateFaceDetectMethod();
+                    if (enabled) {
+                        showToast('Face detection enabled', 'success');
+                        startFaceDetectPolling();
+                    } else {
+                        showToast('Face detection disabled', 'info');
+                        if (faceDetectPollTimer) {
+                            clearInterval(faceDetectPollTimer);
+                            faceDetectPollTimer = null;
+                        }
+                        document.getElementById('faceResults').innerHTML =
+                            '<div class="face-results-empty">Detection stopped</div>';
+                    }
+                } else {
+                    showToast(data.message || 'Failed', 'error');
+                    e.target.checked = !enabled;
+                }
+            } catch (err) {
+                showToast('Face detection error: ' + err.message, 'error');
+                e.target.checked = !enabled;
+            }
+        });
+
+        function updateFaceDetectMethod() {
+            const el = document.getElementById('faceDetectMethod');
+            if (faceDetectMethod && faceDetectMethod !== 'unavailable') {
+                const isDnn = faceDetectMethod.includes('DNN');
+                el.style.display = 'block';
+                el.innerHTML = `<span style="color:${isDnn ? 'var(--success)' : 'var(--gold)'}">● ${faceDetectMethod}</span>`;
+            }
+        }
+
+        function startFaceDetectPolling() {
+            if (faceDetectPollTimer) clearInterval(faceDetectPollTimer);
+            faceDetectPollTimer = setInterval(async () => {
+                try {
+                    const resp = await fetch('/api/face/detection/status');
+                    const data = await resp.json();
+                    if (data.method) {
+                        faceDetectMethod = data.method;
+                        updateFaceDetectMethod();
+                    }
+                    const resultsEl = document.getElementById('faceResults');
+                    if (!data.enabled || !data.faces || data.faces.length === 0) {
+                        resultsEl.innerHTML =
+                            '<div class="face-results-empty">No faces detected</div>';
+                        return;
+                    }
+                    resultsEl.innerHTML = data.faces.map((face, i) => {
+                        const cx = face.x + Math.round(face.w / 2);
+                        const cy = face.y + Math.round(face.h / 2);
+                        return `
+                            <div class="face-results-item">
+                                Face #${i + 1}: pos(${face.x}, ${face.y}) size(${face.w}×${face.h}) center(${cx}, ${cy})
+                            </div>
+                        `;
+                    }).join('');
+                } catch (err) {
+                    if (faceDetectPollTimer) {
+                        clearInterval(faceDetectPollTimer);
+                        faceDetectPollTimer = null;
+                    }
+                }
+            }, 500);
+        }
+
+        // Load initial face detection state
+        (async function initFaceDetect() {
+            try {
+                const resp = await fetch('/api/face/detection/status');
+                const data = await resp.json();
+                if (data.method && data.method !== 'unavailable') {
+                    faceDetectMethod = data.method;
+                    updateFaceDetectMethod();
+                }
+                if (data.enabled) {
+                    document.getElementById('faceDetectToggle').checked = true;
+                    startFaceDetectPolling();
+                }
+                if (!data.available) {
+                    const resultsEl = document.getElementById('faceResults');
+                    resultsEl.innerHTML =
+                        '<div class="face-results-empty" style="color:var(--error)">Face detector not available</div>';
+                }
+            } catch (e) { /* ignore */ }
+        })();
+    </script>
+</body>
+</html>

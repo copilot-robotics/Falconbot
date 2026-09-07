@@ -1,0 +1,774 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Falcon Robot Control System — Qiddiya City</title>
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary: #0a1628;
+            --primary-light: #1e3a8a;
+            --secondary: #fbbf24;
+            --accent: #f59e0b;
+            --dark: #060b18;
+            --dark-card: #0d1a2e;
+            --dark-border: #1e3a5f;
+            --text: #f1f5f9;
+            --text-muted: #8b9bb4;
+            --success: #22c55e;
+            --error: #ef4444;
+            --warning: #fbbf24;
+            --gold: #fbbf24;
+            --gold-dark: #d97706;
+            --glow-blue: rgba(30, 58, 138, 0.4);
+            --glow-gold: rgba(251, 191, 36, 0.3);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'JetBrains Mono', monospace;
+            background: var(--dark);
+            color: var(--text);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        body::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background:
+                radial-gradient(ellipse at 20% 30%, rgba(30, 58, 138, 0.15) 0%, transparent 50%),
+                radial-gradient(ellipse at 80% 70%, rgba(251, 191, 36, 0.08) 0%, transparent 50%),
+                radial-gradient(ellipse at 50% 50%, rgba(10, 22, 40, 0.3) 0%, transparent 70%);
+            animation: bgShift 20s ease-in-out infinite alternate;
+            pointer-events: none;
+        }
+
+        @keyframes bgShift {
+            0% { transform: translate(0, 0); }
+            100% { transform: translate(5%, 5%); }
+        }
+
+        .login-container {
+            width: 100%;
+            max-width: 460px;
+            background: var(--dark-card);
+            border-radius: 24px;
+            border: 1px solid rgba(251, 191, 36, 0.25);
+            box-shadow:
+                0 20px 60px rgba(10, 22, 40, 0.8),
+                0 0 40px rgba(251, 191, 36, 0.08);
+            overflow: hidden;
+            position: relative;
+            z-index: 1;
+        }
+
+        .login-header {
+            background: linear-gradient(135deg, #0a1628 0%, #1e3a8a 50%, #0a1628 100%);
+            padding: 35px 30px 30px;
+            text-align: center;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .login-header::after {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            left: 10%;
+            right: 10%;
+            height: 2px;
+            background: linear-gradient(90deg, transparent, var(--gold), transparent);
+        }
+
+        .logo-icon {
+            font-size: 3rem;
+            margin-bottom: 8px;
+            filter: drop-shadow(0 0 15px rgba(251, 191, 36, 0.5));
+        }
+
+        .login-header h1 {
+            font-size: 1.6rem;
+            font-weight: 700;
+            margin-bottom: 6px;
+            background: linear-gradient(90deg, #fbbf24, #fff8e1, #fbbf24);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            letter-spacing: 1.5px;
+        }
+
+        .login-header .subtitle {
+            color: rgba(251, 191, 36, 0.75);
+            font-size: 0.82rem;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+        }
+
+        .login-header .project-line {
+            color: rgba(139, 155, 180, 0.7);
+            font-size: 0.75rem;
+            margin-top: 8px;
+            letter-spacing: 0.5px;
+        }
+
+        .tabs {
+            display: flex;
+            border-bottom: 1px solid var(--dark-border);
+        }
+
+        .tab {
+            flex: 1;
+            padding: 15px;
+            text-align: center;
+            cursor: pointer;
+            font-size: 0.92rem;
+            font-weight: 600;
+            color: var(--text-muted);
+            transition: all 0.3s ease;
+            position: relative;
+        }
+
+        .tab.active {
+            color: var(--gold);
+        }
+
+        .tab.active::after {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            left: 25%;
+            right: 25%;
+            height: 3px;
+            background: linear-gradient(90deg, var(--gold-dark), var(--gold), var(--gold-dark));
+            border-radius: 3px;
+        }
+
+        .tab:hover {
+            color: var(--text);
+        }
+
+        .form-container {
+            padding: 30px;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            font-size: 0.82rem;
+            color: var(--text-muted);
+            font-weight: 500;
+            letter-spacing: 0.5px;
+            text-transform: uppercase;
+        }
+
+        .form-group input {
+            width: 100%;
+            padding: 14px 16px;
+            border-radius: 10px;
+            border: 1px solid var(--dark-border);
+            background: var(--dark);
+            color: var(--text);
+            font-family: inherit;
+            font-size: 1rem;
+            transition: all 0.3s ease;
+        }
+
+        .form-group input:focus {
+            outline: none;
+            border-color: var(--gold);
+            box-shadow: 0 0 15px rgba(251, 191, 36, 0.15);
+        }
+
+        .form-group input::placeholder {
+            color: var(--text-muted);
+        }
+
+        .form-group .input-group {
+            display: flex;
+            gap: 10px;
+        }
+
+        .form-group .input-group input {
+            flex: 1;
+        }
+
+        .form-group .input-group button {
+            padding: 14px 20px;
+            border-radius: 10px;
+            border: 1px solid var(--dark-border);
+            background: var(--dark);
+            color: var(--text);
+            font-family: inherit;
+            font-size: 0.9rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            white-space: nowrap;
+        }
+
+        .form-group .input-group button:hover {
+            border-color: var(--gold);
+            color: var(--gold);
+        }
+
+        .form-group .input-group button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .btn {
+            width: 100%;
+            padding: 15px;
+            border-radius: 12px;
+            font-family: inherit;
+            font-size: 1rem;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            border: none;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+        }
+
+        .btn-login {
+            background: linear-gradient(135deg, #1e3a8a 0%, #0a1628 50%, #1e3a8a 100%);
+            color: var(--gold);
+            border: 1px solid rgba(251, 191, 36, 0.4);
+            box-shadow: 0 5px 20px rgba(10, 22, 40, 0.5), 0 0 15px rgba(251, 191, 36, 0.1);
+        }
+
+        .btn-login:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(10, 22, 40, 0.6), 0 0 25px rgba(251, 191, 36, 0.2);
+            border-color: var(--gold);
+        }
+
+        .btn-register {
+            background: var(--dark);
+            color: var(--text);
+            border: 1px solid var(--dark-border);
+        }
+
+        .btn-register:hover {
+            border-color: var(--gold);
+            color: var(--gold);
+        }
+
+        .forgot-link {
+            text-align: center;
+            margin-top: 15px;
+        }
+
+        .forgot-link a {
+            color: var(--text-muted);
+            font-size: 0.82rem;
+            text-decoration: none;
+            transition: color 0.3s ease;
+        }
+
+        .forgot-link a:hover {
+            color: var(--gold);
+        }
+
+        .divider {
+            display: flex;
+            align-items: center;
+            margin: 20px 0;
+        }
+
+        .divider::before,
+        .divider::after {
+            content: '';
+            flex: 1;
+            height: 1px;
+            background: var(--dark-border);
+        }
+
+        .divider span {
+            padding: 0 15px;
+            color: var(--text-muted);
+            font-size: 0.82rem;
+        }
+
+        .role-selector {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+
+        .role-option {
+            flex: 1;
+            padding: 12px;
+            border-radius: 10px;
+            border: 1px solid var(--dark-border);
+            background: var(--dark);
+            color: var(--text-muted);
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-size: 0.88rem;
+            font-weight: 500;
+        }
+
+        .role-option.active {
+            border-color: var(--gold);
+            color: var(--gold);
+            background: rgba(251, 191, 36, 0.08);
+        }
+
+        .role-option:hover {
+            border-color: var(--primary-light);
+        }
+
+        .toast {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            padding: 15px 25px;
+            border-radius: 10px;
+            font-family: inherit;
+            font-size: 0.9rem;
+            z-index: 1000;
+            animation: slideIn 0.3s ease;
+            max-width: 300px;
+        }
+
+        .toast.success {
+            background: var(--success);
+            color: white;
+        }
+
+        .toast.error {
+            background: var(--error);
+            color: white;
+        }
+
+        .toast.info {
+            background: var(--primary-light);
+            color: white;
+        }
+
+        @keyframes slideIn {
+            from { transform: translateX(100%); opacity: 0; }
+            to { transform: translateX(0); opacity: 1; }
+        }
+
+        .loading {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            border-radius: 50%;
+            border-top-color: white;
+            animation: spin 1s ease-in-out infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        .phone-prefix {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .phone-prefix select {
+            padding: 14px 10px;
+            border-radius: 10px;
+            border: 1px solid var(--dark-border);
+            background: var(--dark);
+            color: var(--text);
+            font-family: inherit;
+            font-size: 1rem;
+            cursor: pointer;
+        }
+
+        .phone-prefix select:focus {
+            outline: none;
+            border-color: var(--gold);
+        }
+
+        .verification-note {
+            font-size: 0.78rem;
+            color: var(--warning);
+            margin-top: 8px;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+
+        .verification-note svg {
+            width: 14px;
+            height: 14px;
+        }
+
+        .footer-brand {
+            text-align: center;
+            padding: 12px;
+            background: var(--dark);
+            border-top: 1px solid var(--dark-border);
+            font-size: 0.72rem;
+            color: var(--text-muted);
+            letter-spacing: 1px;
+        }
+
+        .footer-brand span {
+            color: var(--gold);
+            font-weight: 600;
+        }
+
+        @media (max-width: 480px) {
+            .login-container {
+                border-radius: 16px;
+            }
+            .login-header {
+                padding: 25px 20px 20px;
+            }
+            .login-header h1 {
+                font-size: 1.3rem;
+            }
+            .form-container {
+                padding: 20px;
+            }
+            .role-selector {
+                flex-direction: column;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="login-container">
+        <div class="login-header">
+            <div class="logo-icon">🦅</div>
+            <h1>Falcon Flight Control System</h1>
+            <div class="subtitle">Robot Operator Access</div>
+            <div class="project-line">Qiddiya City · Falcon Robot Platform</div>
+        </div>
+
+        <div class="tabs">
+            <div class="tab active" id="loginTab">Sign In</div>
+            <div class="tab" id="registerTab">Register</div>
+        </div>
+
+        <div class="form-container">
+            <form id="loginForm">
+                <div class="form-group">
+                    <label for="loginUsername">Username</label>
+                    <input type="text" id="loginUsername" placeholder="Enter your username" required>
+                </div>
+
+                <div class="form-group">
+                    <label for="loginPassword">Password</label>
+                    <input type="password" id="loginPassword" placeholder="Enter your password" required>
+                </div>
+
+                <button type="submit" class="btn btn-login" id="loginBtn">Sign In</button>
+
+                <div class="forgot-link">
+                    <a href="#">Forgot password?</a>
+                </div>
+            </form>
+
+            <form id="registerForm" style="display: none;">
+                <div class="form-group">
+                    <label for="regUsername">Username</label>
+                    <input type="text" id="regUsername" placeholder="Choose a username (3-20 chars)" required>
+                </div>
+
+                <div class="form-group">
+                    <label for="regPassword">Password</label>
+                    <input type="password" id="regPassword" placeholder="Choose a password (min 6 chars)" required>
+                </div>
+
+                <div class="form-group">
+                    <label for="regPhone">Phone Number</label>
+                    <div class="phone-prefix">
+                        <select id="phonePrefix">
+                            <option value="+966">🇸🇦 +966</option>
+                            <option value="+1">🇺🇸 +1</option>
+                            <option value="+44">🇬🇧 +44</option>
+                            <option value="+86">🇨🇳 +86</option>
+                            <option value="+971">🇦🇪 +971</option>
+                        </select>
+                        <input type="tel" id="regPhone" placeholder="Enter phone number" required>
+                    </div>
+                </div>
+
+                <div class="role-selector">
+                    <div class="role-option active" data-role="user">Developer</div>
+                    <div class="role-option" data-role="admin">Administrator</div>
+                </div>
+
+                <button type="submit" class="btn btn-register" id="registerBtn">Create Account</button>
+            </form>
+
+            <form id="verifyForm" style="display: none;">
+                <div class="form-group">
+                    <label for="verifyPhone">Phone Number</label>
+                    <input type="tel" id="verifyPhone" placeholder="Enter your phone number" required>
+                </div>
+
+                <div class="form-group">
+                    <label for="verifyCode">Verification Code</label>
+                    <div class="input-group">
+                        <input type="tel" id="verifyCode" placeholder="Enter 6-digit code" maxlength="6" required>
+                        <button type="button" id="sendCodeBtn">Send Code</button>
+                    </div>
+                    <div class="verification-note">
+                        ⚠️ Note: Verification codes are displayed in the server console
+                    </div>
+                </div>
+
+                <button type="submit" class="btn btn-login" id="verifyBtn">Verify</button>
+
+                <div class="forgot-link">
+                    <a href="#" id="backToRegister">Back to registration</a>
+                </div>
+            </form>
+        </div>
+
+        <div class="footer-brand">
+            <span>FALCON FLIGHT</span> · QIDDIYA CITY · ROBOT CONTROL v1.0
+        </div>
+    </div>
+
+    <script>
+        let currentRole = 'user';
+        let phonePrefix = '+966';
+
+        function showToast(message, type = 'info') {
+            const toast = document.createElement('div');
+            toast.className = `toast ${type}`;
+            toast.textContent = message;
+            document.body.appendChild(toast);
+
+            setTimeout(() => {
+                toast.remove();
+            }, 3000);
+        }
+
+        document.querySelectorAll('.tab').forEach(tab => {
+            tab.addEventListener('click', () => {
+                document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+                tab.classList.add('active');
+
+                document.getElementById('loginForm').style.display = 'none';
+                document.getElementById('registerForm').style.display = 'none';
+                document.getElementById('verifyForm').style.display = 'none';
+
+                if (tab.id === 'loginTab') {
+                    document.getElementById('loginForm').style.display = 'block';
+                } else {
+                    document.getElementById('registerForm').style.display = 'block';
+                }
+            });
+        });
+
+        document.querySelectorAll('.role-option').forEach(option => {
+            option.addEventListener('click', () => {
+                document.querySelectorAll('.role-option').forEach(o => o.classList.remove('active'));
+                option.classList.add('active');
+                currentRole = option.dataset.role;
+            });
+        });
+
+        document.getElementById('phonePrefix').addEventListener('change', (e) => {
+            phonePrefix = e.target.value;
+        });
+
+        document.getElementById('loginForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+
+            const username = document.getElementById('loginUsername').value;
+            const password = document.getElementById('loginPassword').value;
+            const btn = document.getElementById('loginBtn');
+
+            btn.innerHTML = '<span class="loading"></span>';
+            btn.disabled = true;
+
+            try {
+                const response = await fetch('/api/auth/login', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ username, password })
+                });
+                const data = await response.json();
+
+                if (data.success) {
+                    showToast(data.message, 'success');
+                    setTimeout(() => {
+                        window.location.href = data.redirect;
+                    }, 1000);
+                } else {
+                    showToast(data.message, 'error');
+                }
+            } catch (error) {
+                showToast('Login failed: ' + error.message, 'error');
+            } finally {
+                btn.innerHTML = 'Sign In';
+                btn.disabled = false;
+            }
+        });
+
+        document.getElementById('registerForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+
+            const username = document.getElementById('regUsername').value;
+            const password = document.getElementById('regPassword').value;
+            const phone = phonePrefix + document.getElementById('regPhone').value;
+            const btn = document.getElementById('registerBtn');
+
+            btn.innerHTML = '<span class="loading"></span>';
+            btn.disabled = true;
+
+            try {
+                const response = await fetch('/api/auth/register', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ username, password, phone, role: currentRole })
+                });
+                const data = await response.json();
+
+                if (data.success) {
+                    showToast(data.message, 'success');
+                    document.getElementById('verifyPhone').value = phone;
+                    document.getElementById('registerForm').style.display = 'none';
+                    document.getElementById('verifyForm').style.display = 'block';
+                } else {
+                    showToast(data.message, 'error');
+                }
+            } catch (error) {
+                showToast('Registration failed: ' + error.message, 'error');
+            } finally {
+                btn.innerHTML = 'Create Account';
+                btn.disabled = false;
+            }
+        });
+
+        document.getElementById('sendCodeBtn').addEventListener('click', async () => {
+            const phone = document.getElementById('verifyPhone').value;
+            const btn = document.getElementById('sendCodeBtn');
+
+            if (!phone) {
+                showToast('Please enter your phone number', 'error');
+                return;
+            }
+
+            btn.innerHTML = '<span class="loading"></span>';
+            btn.disabled = true;
+
+            try {
+                const response = await fetch('/api/auth/send_sms', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ phone })
+                });
+                const data = await response.json();
+
+                if (data.success) {
+                    showToast(data.message, 'success');
+                    let count = 60;
+                    btn.textContent = `${count}s`;
+                    const timer = setInterval(() => {
+                        count--;
+                        btn.textContent = `${count}s`;
+                        if (count <= 0) {
+                            clearInterval(timer);
+                            btn.textContent = 'Send Code';
+                            btn.disabled = false;
+                        }
+                    }, 1000);
+                } else {
+                    showToast(data.message, 'error');
+                    btn.textContent = 'Send Code';
+                    btn.disabled = false;
+                }
+            } catch (error) {
+                showToast('Failed to send code: ' + error.message, 'error');
+                btn.textContent = 'Send Code';
+                btn.disabled = false;
+            }
+        });
+
+        document.getElementById('verifyForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+
+            const phone = document.getElementById('verifyPhone').value;
+            const code = document.getElementById('verifyCode').value;
+            const btn = document.getElementById('verifyBtn');
+
+            if (code.length !== 6) {
+                showToast('Verification code must be 6 digits', 'error');
+                return;
+            }
+
+            btn.innerHTML = '<span class="loading"></span>';
+            btn.disabled = true;
+
+            try {
+                const response = await fetch('/api/auth/verify_sms', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ phone, code })
+                });
+                const data = await response.json();
+
+                if (data.success) {
+                    showToast(data.message + '. You can now login.', 'success');
+                    setTimeout(() => {
+                        document.getElementById('registerTab').click();
+                        document.getElementById('loginTab').click();
+                    }, 2000);
+                } else {
+                    showToast(data.message, 'error');
+                }
+            } catch (error) {
+                showToast('Verification failed: ' + error.message, 'error');
+            } finally {
+                btn.innerHTML = 'Verify';
+                btn.disabled = false;
+            }
+        });
+
+        document.getElementById('backToRegister').addEventListener('click', () => {
+            document.getElementById('verifyForm').style.display = 'none';
+            document.getElementById('registerForm').style.display = 'block';
+        });
+
+        async function checkSession() {
+            try {
+                const response = await fetch('/api/auth/check_session');
+                const data = await response.json();
+                if (data.logged_in) {
+                    window.location.href = '/dashboard';
+                }
+            } catch (error) {
+                console.error('Failed to check session:', error);
+            }
+        }
+
+        checkSession();
+    </script>
+</body>
+</html>
