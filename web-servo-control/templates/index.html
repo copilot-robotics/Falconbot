@@ -634,86 +634,6 @@
             cursor: not-allowed;
         }
 
-        /* ---- Servo ID scan panel ---- */
-        .scan-panel {
-            background: var(--dark-card);
-            border-radius: 16px;
-            padding: 25px;
-            border: 1px solid var(--dark-border);
-        }
-
-        .scan-title {
-            font-size: 1.2rem;
-            font-weight: 600;
-            margin-bottom: 18px;
-            color: var(--text);
-        }
-
-        .scan-actions {
-            display: flex;
-            gap: 12px;
-            margin-bottom: 18px;
-        }
-
-        .btn-scan {
-            flex: 1;
-            background: linear-gradient(135deg, #1e3a8a, #0a1628);
-            color: var(--gold);
-            border: 1px solid rgba(251, 191, 36, 0.4);
-        }
-
-        .btn-scan:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 5px 20px rgba(10, 22, 40, 0.5), 0 0 20px rgba(251, 191, 36, 0.15);
-            border-color: var(--gold);
-        }
-
-        .btn-scan:disabled {
-            opacity: 0.5;
-            cursor: not-allowed;
-        }
-
-        .scan-result-area {
-            min-height: 80px;
-            padding: 18px;
-            border-radius: 12px;
-            background: var(--dark);
-            border: 1px solid var(--dark-border);
-        }
-
-        .scan-placeholder {
-            color: var(--text-muted);
-            text-align: center;
-            padding: 10px;
-        }
-
-        .scan-id-list {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 10px;
-        }
-
-        .scan-id-chip {
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            min-width: 60px;
-            height: 44px;
-            padding: 0 14px;
-            border-radius: 10px;
-            background: linear-gradient(135deg, #1e3a8a, #fbbf24);
-            color: var(--dark);
-            font-weight: 700;
-            font-size: 1rem;
-            box-shadow: 0 4px 15px rgba(10, 22, 40, 0.4);
-        }
-
-        .scan-progress {
-            color: var(--text-muted);
-            font-size: 0.85rem;
-            text-align: center;
-        }
-
         /* ---- Emotion actions panel (行为动作) ---- */
         .emotion-panel {
             background: var(--dark-card);
@@ -1354,36 +1274,36 @@
         .camera-panel {
             background: var(--dark-card);
             border-radius: 16px;
-            padding: 20px;
+            padding: 12px 16px;
             border: 1px solid var(--dark-border);
             display: flex;
             flex-direction: column;
-            height: 100%;
+            height: auto;
         }
 
         .camera-header {
             display: flex;
             justify-content: space-between;
             align-items: center;
-            margin-bottom: 15px;
+            margin-bottom: 8px;
         }
 
         .camera-title {
-            font-size: 1.2rem;
+            font-size: 1rem;
             font-weight: 600;
             color: var(--text);
         }
 
         .camera-controls {
             display: flex;
-            gap: 10px;
+            gap: 8px;
         }
 
         .camera-btn {
-            padding: 8px 15px;
-            border-radius: 8px;
+            padding: 5px 12px;
+            border-radius: 6px;
             font-family: inherit;
-            font-size: 0.85rem;
+            font-size: 0.78rem;
             font-weight: 600;
             cursor: pointer;
             transition: all 0.3s ease;
@@ -1407,11 +1327,11 @@
         }
 
         .camera-container {
-            flex: 1;
+            flex: 0 0 auto;
             background: #000;
-            border-radius: 12px;
+            border-radius: 8px;
             overflow: hidden;
-            min-height: 300px;
+            height: 140px !important;
             position: relative;
             display: flex;
             align-items: center;
@@ -1444,7 +1364,7 @@
         .video-record-panel {
             background: var(--dark-card);
             border-radius: 16px;
-            padding: 20px;
+            padding: 12px 16px;
             border: 1px solid var(--dark-border);
         }
 
@@ -1452,11 +1372,11 @@
             display: flex;
             justify-content: space-between;
             align-items: center;
-            margin-bottom: 15px;
+            margin-bottom: 8px;
         }
 
         .video-record-title {
-            font-size: 1.1rem;
+            font-size: 0.95rem;
             font-weight: 600;
             color: var(--text);
         }
@@ -1802,46 +1722,46 @@
 
         .robot-status-panel {
             background: var(--dark-card);
-            border-radius: 16px;
-            padding: 20px;
+            border-radius: 14px;
+            padding: 12px 16px;
             border: 1px solid var(--dark-border);
         }
 
         .robot-status-title {
-            font-size: 1.1rem;
+            font-size: 0.95rem;
             font-weight: 600;
-            margin-bottom: 15px;
+            margin-bottom: 8px;
             color: var(--text);
         }
 
         .status-grid {
             display: grid;
             grid-template-columns: repeat(3, 1fr);
-            gap: 15px;
+            gap: 8px;
         }
 
         .status-card {
             background: var(--dark);
-            border-radius: 12px;
-            padding: 15px;
+            border-radius: 8px;
+            padding: 8px;
             text-align: center;
             border: 1px solid var(--dark-border);
         }
 
         .status-card-icon {
-            font-size: 1.8rem;
-            margin-bottom: 10px;
+            font-size: 1.3rem;
+            margin-bottom: 3px;
         }
 
         .status-card-label {
-            font-size: 0.75rem;
+            font-size: 0.65rem;
             color: var(--text-muted);
             display: block;
-            margin-bottom: 5px;
+            margin-bottom: 2px;
         }
 
         .status-card-value {
-            font-size: 1.4rem;
+            font-size: 1.05rem;
             font-weight: 700;
             font-family: 'JetBrains Mono', monospace;
         }
@@ -1870,73 +1790,22 @@
             color: var(--error);
         }
 
-        .motors-status {
-            margin-top: 15px;
-            background: var(--dark);
-            border-radius: 12px;
-            padding: 15px;
-            border: 1px solid var(--dark-border);
-        }
-
-        .motors-status-title {
-            font-size: 0.9rem;
-            font-weight: 600;
-            color: var(--text-muted);
-            margin-bottom: 10px;
-        }
-
-        .motor-item {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 8px 0;
-            border-bottom: 1px solid var(--dark-border);
-        }
-
-        .motor-item:last-child {
-            border-bottom: none;
-        }
-
-        .motor-id {
-            font-weight: 600;
-            color: var(--gold);
-        }
-
-        .motor-position {
-            font-family: 'JetBrains Mono', monospace;
-            color: var(--text);
-        }
-
-        .motor-status {
-            width: 8px;
-            height: 8px;
-            border-radius: 50%;
-        }
-
-        .motor-status.connected {
-            background: var(--success);
-        }
-
-        .motor-status.disconnected {
-            background: var(--error);
-        }
-
         .llm-panel {
             background: var(--dark-card);
-            border-radius: 16px;
-            padding: 20px;
+            border-radius: 14px;
+            padding: 12px 16px;
             border: 1px solid var(--dark-border);
         }
 
         .llm-title {
-            font-size: 1.1rem;
+            font-size: 0.95rem;
             font-weight: 600;
-            margin-bottom: 15px;
+            margin-bottom: 8px;
             color: var(--text);
         }
 
         .llm-section {
-            margin-bottom: 20px;
+            margin-bottom: 10px;
         }
 
         .llm-section:last-child {
@@ -1945,21 +1814,21 @@
 
         .llm-label {
             display: block;
-            margin-bottom: 10px;
-            font-size: 0.85rem;
+            margin-bottom: 4px;
+            font-size: 0.75rem;
             color: var(--text-muted);
             font-weight: 500;
         }
 
         .llm-select {
             width: 100%;
-            padding: 12px 15px;
-            border-radius: 10px;
+            padding: 6px 10px;
+            border-radius: 6px;
             border: 1px solid var(--dark-border);
             background: var(--dark);
             color: var(--text);
             font-family: inherit;
-            font-size: 0.95rem;
+            font-size: 0.85rem;
             cursor: pointer;
             transition: all 0.3s ease;
         }
@@ -1972,14 +1841,14 @@
 
         .llm-textarea {
             width: 100%;
-            height: 120px;
-            padding: 12px 15px;
-            border-radius: 10px;
+            height: 60px;
+            padding: 6px 10px;
+            border-radius: 6px;
             border: 1px solid var(--dark-border);
             background: var(--dark);
             color: var(--text);
             font-family: inherit;
-            font-size: 0.95rem;
+            font-size: 0.85rem;
             resize: vertical;
             transition: all 0.3s ease;
         }
@@ -1996,10 +1865,10 @@
 
         .btn-save-config {
             width: 100%;
-            padding: 12px;
-            border-radius: 10px;
+            padding: 8px;
+            border-radius: 6px;
             font-family: inherit;
-            font-size: 0.95rem;
+            font-size: 0.85rem;
             font-weight: 600;
             cursor: pointer;
             transition: all 0.3s ease;
@@ -2394,46 +2263,6 @@
             border: 1px solid rgba(251, 191, 36, 0.5);
         }
 
-        .scan-id-list {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 8px;
-        }
-
-        .scan-id-chip {
-            display: inline-flex;
-            align-items: center;
-            padding: 6px 12px;
-            background: linear-gradient(135deg, #1e3a8a, #0a1628);
-            color: var(--gold);
-            border: 1px solid rgba(251, 191, 36, 0.4);
-            border-radius: 20px;
-            font-family: 'JetBrains Mono', monospace;
-            font-size: 0.85rem;
-            font-weight: 600;
-        }
-
-        .scan-progress {
-            padding: 15px;
-            background: rgba(59, 130, 246, 0.1);
-            border: 1px solid rgba(59, 130, 246, 0.3);
-            border-radius: 8px;
-            text-align: center;
-            color: var(--primary-light);
-            font-size: 0.9rem;
-            animation: pulse 1.5s infinite;
-        }
-
-        .scan-placeholder {
-            padding: 15px;
-            background: rgba(255, 255, 255, 0.03);
-            border: 1px dashed var(--dark-border);
-            border-radius: 8px;
-            text-align: center;
-            color: var(--text-muted);
-            font-size: 0.85rem;
-        }
-
         @keyframes slideIn {
             from {
                 transform: translateX(100%);
@@ -2465,7 +2294,8 @@
             }
 
             .camera-container {
-                min-height: 250px;
+                height: 140px;
+                min-height: 140px;
             }
         }
 
@@ -2611,18 +2441,6 @@
                     </div>
                 </div>
 
-                <div class="scan-panel">
-                    <div class="scan-title">
-                        Servo ID Auto Scan
-                    </div>
-                    <div class="scan-actions">
-                        <button class="btn btn-scan" id="scanIdsBtn">Start Scan</button>
-                    </div>
-                    <div class="scan-result-area" id="scanResultArea">
-                        <div class="scan-placeholder" id="scanPlaceholder">Click "Start Scan" to detect connected servo IDs</div>
-                    </div>
-                </div>
-
                 <div class="audio-panel">
                     <div class="audio-title">
                         🎵 Speaker &amp; Mic Test
@@ -2732,13 +2550,6 @@
                             <span class="status-card-label">Motor Status</span>
                             <span class="status-card-value" id="motorStatusValue">--</span>
                         </div>
-                    </div>
-                    <div class="motors-status">
-                        <div class="motors-status-title">
-                            <span>Servo Motors</span>
-                            <span style="font-size:0.75rem;color:var(--text-muted)">Live Position</span>
-                        </div>
-                        <div id="motorItems"></div>
                     </div>
                 </div>
 
@@ -2884,18 +2695,6 @@
                         <input type="number" id="sinFreq${id}" min="0.01" max="10" step="0.01" value="0.5">
                     </div>`;
                 sinRows.appendChild(row);
-            });
-
-            // Motor status items
-            const motorItems = document.getElementById('motorItems');
-            servos.forEach(id => {
-                const item = document.createElement('div');
-                item.className = 'motor-item';
-                item.innerHTML = `
-                    <span class="motor-id">ID: ${id}</span>
-                    <span class="motor-position" id="motorPos${id}" style="color:var(--success)">2048</span>
-                    <div class="motor-status disconnected" id="motorStatus${id}"></div>`;
-                motorItems.appendChild(item);
             });
         })();
 
@@ -3267,19 +3066,6 @@
                 const motorStatusValue = document.getElementById('motorStatusValue');
                 const connectedCount = data.connected ? servos.length : 0;
                 motorStatusValue.textContent = connectedCount + '/' + servos.length + ' Connected';
-
-                if (data.current_positions) {
-                    servos.forEach(id => {
-                        const posEl = document.getElementById(`motorPos${id}`);
-                        const statusEl = document.getElementById(`motorStatus${id}`);
-                        const pos = data.current_positions[id];
-                        const displayPos = (pos !== undefined && pos >= 0) ? pos : '--';
-                        if (posEl) posEl.textContent = displayPos;
-                        if (statusEl) {
-                            statusEl.className = 'motor-status ' + (data.connected ? 'connected' : 'disconnected');
-                        }
-                    });
-                }
             } catch (error) {
                 console.error('Failed to load system status:', error);
             }
@@ -3798,96 +3584,6 @@
                 : 'OFF: only the on-screen animation moves · 开关打开后同时驱动机器人';
         });
 
-        // ---- Servo ID scan ----
-        async function scanServoIds() {
-            const btn = document.getElementById('scanIdsBtn');
-            const area = document.getElementById('scanResultArea');
-            btn.disabled = true;
-            btn.textContent = 'Scanning...';
-            area.innerHTML = '<div class="scan-progress">Pinging IDs 1-30... (this may take a few seconds)</div>';
-
-            try {
-                const response = await fetch('/api/scan_ids', { method: 'POST' });
-                const data = await response.json();
-
-                if (data.success && data.found_ids && data.found_ids.length > 0) {
-                    const ids = data.found_ids;
-                    let chips = '<div class="scan-id-list">';
-                    ids.forEach(id => {
-                        chips += `<div class="scan-id-chip">ID: ${id}</div>`;
-                    });
-                    chips += '</div>';
-                    area.innerHTML = `
-                        <div style="margin-bottom:10px;font-size:0.9rem;color:var(--success)">
-                            Found ${ids.length} servo(s) @ ${data.baud} baud:
-                        </div>` + chips;
-                    showToast(`Found ${ids.length} servo(s)!`, 'success');
-                } else {
-                    area.innerHTML = `
-                        <div style="color:var(--warning);margin-bottom:8px;">⚠ No servos detected</div>
-                        <div style="font-size:0.75rem;color:var(--text-muted);line-height:1.4;">
-                            ${data.message || 'No response at current baud rate.'}<br>
-                            <strong>Checklist:</strong><br>
-                            1. Ensure servos have external power (6-12V)<br>
-                            2. Verify TX/RX connections (TX→RX, RX→TX)<br>
-                            3. Try a different serial port<br>
-                            4. Servo baud rate may differ (default: 1M, try 115200)<br>
-                            5. If using half-duplex bus, ensure direction control
-                        </div>
-                        <button id="diagBtn" style="margin-top:10px;padding:6px 12px;background:var(--primary-light);color:white;border:none;border-radius:6px;cursor:pointer;font-size:0.75rem;">🔍 Run Serial Diagnostics</button>
-                    `;
-                    showToast('No servos found. Check power/wiring.', 'error');
-                    document.getElementById('diagBtn')?.addEventListener('click', runSerialDiagnostics);
-                }
-            } catch (e) {
-                area.innerHTML = `<div class="scan-placeholder" style="color:var(--error)">Error: ${e.message}</div>`;
-            } finally {
-                btn.disabled = false;
-                btn.textContent = 'Start Scan';
-            }
-        }
-
-        async function runSerialDiagnostics() {
-            const area = document.getElementById('scanResultArea');
-            area.innerHTML = '<div class="scan-progress">Testing serial communication at multiple baud rates on both ports...<br>This may take ~30 seconds</div>';
-
-            const ports = ['/dev/ttyACM0', '/dev/ttyACM1'];
-            let results = '';
-
-            for (const port of ports) {
-                try {
-                    const resp = await fetch('/api/serial/diagnose', {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ port, servo_id: servos[0] })
-                    });
-                    const data = await resp.json();
-                    
-                    const testsHtml = (data.tests || []).map(t => {
-                        if (t.error) return `  <span style="color:var(--error)">${t.baud} baud: ERROR - ${t.error}</span>`;
-                        return `  ${t.baud} baud: ${t.ping_ok ? '<span style="color:var(--success)">✓ RESPONSE</span>' : '<span style="color:var(--text-muted)">✗ No response</span>'}`;
-                    }).join('<br>');
-                    
-                    const hwChecks = data.hardware_checks || {};
-                    results += `
-                        <div style="margin-bottom:15px;padding:12px;background:rgba(255,255,255,0.03);border-radius:8px;border:1px solid var(--dark-border);">
-                            <div style="font-weight:600;margin-bottom:8px;color:var(--text)">🔌 ${port}</div>
-                            <div style="font-family:'JetBrains Mono',monospace;font-size:0.75rem;line-height:1.6;">${testsHtml}</div>
-                            ${data.overall_success ? 
-                                `<div style="margin-top:8px;padding:6px;background:rgba(34,197,94,0.1);border-radius:4px;color:var(--success);font-size:0.8rem;">${data.diagnosis || 'Working!'}</div>` : 
-                                `<div style="margin-top:8px;padding:6px;background:rgba(239,68,68,0.1);border-radius:4px;color:var(--error);font-size:0.8rem;">${data.diagnosis || 'No response'}</div>`
-                            }
-                            ${data.recommendation ? `<div style="margin-top:4px;font-size:0.75rem;color:var(--warning);">💡 ${data.recommendation}</div>` : ''}
-                        </div>`;
-                } catch (e) {
-                    results += `<div style="color:var(--error);margin-bottom:10px;">${port}: Failed to run diagnostics - ${e.message}</div>`;
-                }
-            }
-            area.innerHTML = results;
-        }
-
-        document.getElementById('scanIdsBtn').addEventListener('click', scanServoIds);
-
         // ---- Audio test panel (speaker & microphone) ----
         let audioPollingTimer = null;
         let lastShownRecordAt = 0;
@@ -4111,29 +3807,14 @@
                     servos.forEach(id => {
                         const pos = data.current_positions[id];
                         const validPos = (pos !== undefined && pos >= 0);
-                        // read_feedback_ok indicates whether the position came from hardware
-                        // feedback (true) or is a fallback to the commanded target (false).
                         const feedbackOk = data.read_feedback_ok ? data.read_feedback_ok[id] : false;
                         if (feedbackOk) anyOk = true;
 
                         if (validPos) {
                             const curEl = document.getElementById(`current${id}`);
-                            // Append '*' to indicate the value is a target fallback,
-                            // not live hardware feedback.
                             curEl.textContent = validPos ? pos : '--';
                             curEl.style.color = feedbackOk ? '' : 'var(--warning)';
                             curEl.title = feedbackOk ? 'Live hardware position' : 'Target position (no hardware feedback)';
-                        }
-
-                        const posEl = document.getElementById(`motorPos${id}`);
-                        const statusEl = document.getElementById(`motorStatus${id}`);
-                        if (posEl) {
-                            posEl.textContent = validPos ? pos : '--';
-                            posEl.style.color = feedbackOk ? 'var(--success)' : 'var(--warning)';
-                            posEl.title = feedbackOk ? 'Live hardware position' : 'Target position (no hardware feedback)';
-                        }
-                        if (statusEl) {
-                            statusEl.className = 'motor-status ' + (data.connected ? 'connected' : 'disconnected');
                         }
                     });
                     anyFeedbackOk = anyOk;
