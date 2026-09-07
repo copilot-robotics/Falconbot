@@ -2186,6 +2186,180 @@
             color: var(--gold);
         }
 
+        /* ============ Live Speech Panel ============ */
+        .speech-panel {
+            background: linear-gradient(135deg, rgba(10, 22, 40, 0.95), rgba(30, 58, 138, 0.85));
+            border: 1px solid rgba(251, 191, 36, 0.35);
+            border-radius: 14px;
+            padding: 18px 22px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .speech-panel::before {
+            content: '';
+            position: absolute;
+            top: 0; left: 0; right: 0;
+            height: 2px;
+            background: linear-gradient(90deg, transparent, var(--gold), transparent);
+            animation: speechGlow 3s ease-in-out infinite;
+        }
+
+        @keyframes speechGlow {
+            0%, 100% { opacity: 0.4; }
+            50% { opacity: 1; }
+        }
+
+        .speech-title {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-size: 0.9rem;
+            color: var(--gold);
+            font-weight: 600;
+            margin-bottom: 12px;
+        }
+
+        .speech-title .speech-indicator {
+            width: 8px; height: 8px;
+            border-radius: 50%;
+            background: var(--success);
+            animation: pulse 1.5s ease-in-out infinite;
+        }
+
+        .speech-title .speech-indicator.idle {
+            background: var(--text-muted);
+            animation: none;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; box-shadow: 0 0 0 0 rgba(34,197,94,0.5); }
+            50% { opacity: 0.7; box-shadow: 0 0 0 6px rgba(34,197,94,0); }
+        }
+
+        .speech-main {
+            min-height: 70px;
+            max-height: 140px;
+            overflow-y: auto;
+            padding: 12px 16px;
+            background: rgba(0, 0, 0, 0.35);
+            border-radius: 10px;
+            border-left: 3px solid var(--gold);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+        }
+
+        .speech-main.rtl {
+            direction: rtl;
+            text-align: right;
+            font-family: 'Noto Sans Arabic', sans-serif;
+            border-left: none;
+            border-right: 3px solid var(--gold);
+        }
+
+        .speech-main::-webkit-scrollbar { width: 4px; }
+        .speech-main::-webkit-scrollbar-thumb { background: var(--dark-border); border-radius: 2px; }
+
+        .speech-text {
+            font-size: 1.35rem;
+            font-weight: 500;
+            line-height: 1.45;
+            color: #f5f5f5;
+            letter-spacing: 0.5px;
+        }
+
+        .speech-text.typing::after {
+            content: '▍';
+            color: var(--gold);
+            animation: blinkCursor 0.8s step-end infinite;
+            margin-left: 2px;
+        }
+
+        @keyframes blinkCursor {
+            50% { opacity: 0; }
+        }
+
+        .speech-placeholder {
+            color: var(--text-muted);
+            font-style: italic;
+            font-size: 1rem;
+            opacity: 0.7;
+        }
+
+        .speech-emotion-tag {
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            padding: 2px 10px;
+            border-radius: 12px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            margin-top: 8px;
+            width: fit-content;
+        }
+
+        .speech-emotion-tag.happy { background: rgba(239,68,68,0.2); color: #fca5a5; border: 1px solid rgba(239,68,68,0.4); }
+        .speech-emotion-tag.calm { background: rgba(34,197,94,0.2); color: #86efac; border: 1px solid rgba(34,197,94,0.4); }
+        .speech-emotion-tag.enthusiastic { background: rgba(168,85,247,0.2); color: #d8b4fe; border: 1px solid rgba(168,85,247,0.4); }
+        .speech-emotion-tag.idle { background: rgba(100,116,139,0.2); color: #cbd5e1; border: 1px solid rgba(100,116,139,0.4); }
+        .speech-emotion-tag.tts { background: rgba(251,191,36,0.2); color: #fde68a; border: 1px solid rgba(251,191,36,0.4); }
+
+        .speech-history {
+            margin-top: 8px;
+            max-height: 60px;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column-reverse;
+            gap: 4px;
+        }
+
+        .speech-history::-webkit-scrollbar { width: 3px; }
+        .speech-history::-webkit-scrollbar-thumb { background: var(--dark-border); border-radius: 2px; }
+
+        .speech-history-item {
+            font-size: 0.75rem;
+            color: var(--text-muted);
+            opacity: 0.55;
+            padding: 2px 0;
+            border-bottom: 1px dashed rgba(255,255,255,0.05);
+            transition: opacity 0.3s;
+        }
+
+        .speech-history-item:hover {
+            opacity: 0.9;
+            color: var(--text);
+        }
+
+        .speech-history-item.rtl {
+            direction: rtl;
+            text-align: right;
+            font-family: 'Noto Sans Arabic', sans-serif;
+        }
+
+        .speech-actions {
+            display: flex;
+            gap: 6px;
+            margin-top: 8px;
+            justify-content: flex-end;
+        }
+
+        .btn-speech-clear {
+            padding: 4px 12px;
+            font-size: 0.75rem;
+            border-radius: 6px;
+            border: 1px solid var(--dark-border);
+            background: transparent;
+            color: var(--text-muted);
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .btn-speech-clear:hover {
+            border-color: var(--error);
+            color: var(--error);
+        }
+
         .toast {
             position: fixed;
             top: 20px;
@@ -2605,6 +2779,22 @@
                         <textarea class="llm-textarea" id="llmPrompt" placeholder="Define the robot's personality and behavior. e.g. 'You are a brave hunter falcon who loves to fly at dawn...'&#10;定义机器人的性格和行为，例如：'你是一只勇敢的猎鹰，喜欢在黎明时分飞翔...'"></textarea>
                     </div>
                     <button class="btn-save-config" id="saveLlmConfigBtn">Save Configuration 保存配置</button>
+                </div>
+
+                <!-- Live Speech Display Panel -->
+                <div class="speech-panel">
+                    <div class="speech-title">
+                        🦅 Falcon Says <span style="color:var(--text-muted);font-size:0.75rem;">Live Speech 实时语音</span>
+                        <span class="speech-indicator idle" id="speechIndicator"></span>
+                    </div>
+                    <div class="speech-main" id="speechMain">
+                        <span class="speech-placeholder" id="speechPlaceholder">The falcon is silent... 🤫 猎鹰正在沉默...</span>
+                    </div>
+                    <div class="speech-emotion-tag idle" id="speechEmotionTag" style="display:none;">💤 Idle</div>
+                    <div class="speech-history" id="speechHistory"></div>
+                    <div class="speech-actions">
+                        <button class="btn-speech-clear" id="speechClearBtn">Clear 🗑</button>
+                    </div>
                 </div>
 
                 <!-- Chat Panel -->
@@ -3129,6 +3319,121 @@
 
         let currentChatLang = 'en';
 
+        // ============ Live Speech Panel State ============
+        let speechHistory = [];
+        let speechTypingTimer = null;
+        const SPEECH_HISTORY_MAX = 10;
+
+        const EMOTION_META = {
+            idle:         { icon: '💤', label: 'Idle 待机',       cls: 'idle' },
+            happy:       { icon: '😊', label: 'Happy 开心',     cls: 'happy' },
+            calm:        { icon: '😌', label: 'Calm 冷静',      cls: 'calm' },
+            enthusiastic:{ icon: '🤗', label: 'Enthusiastic 热情', cls: 'enthusiastic' },
+        };
+
+        function setEmotionTag(emotion) {
+            const tag = document.getElementById('speechEmotionTag');
+            const meta = EMOTION_META[emotion] || EMOTION_META.idle;
+            tag.className = 'speech-emotion-tag ' + meta.cls;
+            tag.textContent = meta.icon + ' ' + meta.label;
+            tag.style.display = 'inline-flex';
+        }
+
+        function clearEmotionTag() {
+            const tag = document.getElementById('speechEmotionTag');
+            tag.style.display = 'none';
+        }
+
+        function showSpeech(text, lang, opts = {}) {
+            const main = document.getElementById('speechMain');
+            const indicator = document.getElementById('speechIndicator');
+            const isEmotion = opts.isEmotion || false;
+            const emotion = opts.emotion || null;
+
+            // Stop any ongoing typewriter
+            if (speechTypingTimer) {
+                clearInterval(speechTypingTimer);
+                speechTypingTimer = null;
+            }
+
+            // Remove placeholder if present
+            const ph = document.getElementById('speechPlaceholder');
+            if (ph) ph.remove();
+
+            // Set RTL class on main container for Arabic
+            main.classList.toggle('rtl', lang === 'ar');
+
+            // Set emotion tag
+            if (emotion) {
+                setEmotionTag(emotion);
+            } else if (!isEmotion) {
+                // Keep current emotion tag, don't clear on regular speech
+            }
+
+            // Update indicator: "typing" green, "idle" grey
+            indicator.classList.remove('idle');
+
+            // Typewriter effect
+            main.innerHTML = '';
+            const span = document.createElement('span');
+            span.className = 'speech-text typing';
+            if (lang === 'ar') span.style.fontFamily = "'Noto Sans Arabic', sans-serif";
+            main.appendChild(span);
+
+            let i = 0;
+            const CHARS_PER_TICK = lang === 'ar' ? 2 : 3; // Arabic chars render slightly slower
+            const BASE_DELAY = 20; // ms per tick
+
+            speechTypingTimer = setInterval(() => {
+                const end = Math.min(i + CHARS_PER_TICK, text.length);
+                span.textContent = text.slice(0, end);
+                main.scrollTop = main.scrollHeight;
+                i = end;
+                if (i >= text.length) {
+                    clearInterval(speechTypingTimer);
+                    speechTypingTimer = null;
+                    span.classList.remove('typing');
+                    indicator.classList.add('idle');
+                    // Add to history
+                    addSpeechToHistory(text, lang);
+                    // Auto-scroll to bottom of main
+                    main.scrollTop = main.scrollHeight;
+                }
+            }, BASE_DELAY);
+        }
+
+        function addSpeechToHistory(text, lang) {
+            const item = { text, lang, time: Date.now() };
+            speechHistory.unshift(item);
+            if (speechHistory.length > SPEECH_HISTORY_MAX) speechHistory.pop();
+            renderSpeechHistory();
+        }
+
+        function renderSpeechHistory() {
+            const container = document.getElementById('speechHistory');
+            container.innerHTML = '';
+            speechHistory.forEach((item, idx) => {
+                const div = document.createElement('div');
+                div.className = 'speech-history-item' + (item.lang === 'ar' ? ' rtl' : '');
+                div.textContent = (idx + 1) + '. ' + (item.text.length > 80 ? item.text.slice(0, 80) + '…' : item.text);
+                container.appendChild(div);
+            });
+        }
+
+        function clearSpeechPanel() {
+            const main = document.getElementById('speechMain');
+            main.innerHTML = '<span class="speech-placeholder" id="speechPlaceholder">The falcon is silent... 🤫 猎鹰正在沉默...</span>';
+            main.classList.remove('rtl');
+            speechHistory = [];
+            renderSpeechHistory();
+            clearEmotionTag();
+            document.getElementById('speechIndicator').classList.add('idle');
+            if (speechTypingTimer) {
+                clearInterval(speechTypingTimer);
+                speechTypingTimer = null;
+            }
+        }
+
         async function loadLlmConfig() {
             try {
                 const response = await fetch('/api/llm/config');
@@ -3218,6 +3523,7 @@
                 const data = await resp.json();
                 if (data.success) {
                     appendChatMsg('bot', data.reply, data.language || currentChatLang);
+                    showSpeech(data.reply, data.language || currentChatLang);
                 } else {
                     appendChatMsg('system', '⚠ ' + data.message, currentChatLang);
                 }
@@ -3243,6 +3549,7 @@
         document.getElementById('saveLlmConfigBtn').addEventListener('click', saveLlmConfig);
         document.getElementById('chatSendBtn').addEventListener('click', sendChat);
         document.getElementById('chatClearBtn').addEventListener('click', clearChat);
+        document.getElementById('speechClearBtn').addEventListener('click', clearSpeechPanel);
         document.getElementById('chatInput').addEventListener('keydown', (e) => {
             if (e.key === 'Enter') sendChat();
         });
@@ -3442,6 +3749,14 @@
                     setEmotionButtonsActive(action);
                     setEmotionRunningUI(true, action, driveRobot);
                     showToast(data.message, 'success');
+                    // Show emotion status in live speech panel
+                    const speechMap = {
+                        idle: '🦅 Falcon settles into idle mode... 猎鹰进入待机状态...',
+                        happy: '🦅 The falcon is happy! 猎鹰开心极了！',
+                        calm: '🦅 The falcon calms down... 猎鹰冷静下来...',
+                        enthusiastic: '🦅 The falcon is enthusiastic! 猎鹰热情高涨！',
+                    };
+                    showSpeech(speechMap[action] || action, currentChatLang, { emotion: action, isEmotion: true });
                     startEmotionPolling();
                 } else {
                     showToast(data.message, 'error');
@@ -3462,6 +3777,8 @@
                 setEmotionButtonsActive(null);
                 setEmotionRunningUI(false, null, false);
                 showToast('Emotion action stopped', 'info');
+                showSpeech('🦅 Falcon stands still. 猎鹰静立不动。', currentChatLang, { emotion: null, isEmotion: true });
+                clearEmotionTag();
             } catch (e) {
                 showToast('Failed to stop: ' + e.message, 'error');
             }
