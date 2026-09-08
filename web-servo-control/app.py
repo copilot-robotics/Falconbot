@@ -35,9 +35,58 @@ Session(app)
 ser = None
 connected = False
 servo_ids = [2, 3, 4, 5, 6, 7, 8, 9, 10, 11]
-current_positions = {sid: 2048 for sid in servo_ids}
+
+JOINT_HOME = 2048
+# Per-servo resting-position overrides. Most joints share JOINT_HOME (the shared mechanical
+# center, 0-4095 range); a few need a different rest angle for how that specific joint is
+# actually mounted on this robot.
+HOME_OVERRIDES = {
+    # 8 (L ankle): 2026-09-08, live-tuned on the real robot — at the shared JOINT_HOME (2048)
+    # this joint physically strikes the robot's base from behind. Raised to 2163 (tuned live
+    # via /api/move with the user watching the physical robot) so it rests clear of the base.
+    8: 2163,
+    # 5 (R ankle): 2026-09-08, same symptom reported on the right leg ("hits the thing below
+    # it when it goes down"). Mirrored to the SAME 2163 as the left ankle on the assumption the
+    # legs are mechanically symmetric (both ankles already share identical amp/freq values in
+    # every EMOTION_ACTIONS entry, which supports that) — UNVERIFIED on hardware for this
+    # specific side (live testing was interrupted before confirming). Re-tune on the real robot
+    # and correct this number if 2163 isn't quite right for the right ankle specifically.
+    5: 2163,
+}
+
+# Per-servo minimum-position safety floors. Different from HOME_OVERRIDES above: that's just
+# the RESTING value; this is a hard clamp applied to EVERY computed position from ANY source
+# (an emotion action's sine wave, the idle random walk, or the manual sin-motion test tool) —
+# so a large-amplitude action can never drive a joint back down past the point where it
+# physically collides with something below it, not just at rest. "make both leg ankle strict"
+# (2026-09-08): both ankles get a floor at their (now-raised) home position — see clamp_position.
+MIN_POSITION = {
+    5: 2163,  # R ankle — see HOME_OVERRIDES note above (mirrored, unverified on this side yet)
+    8: 2163,  # L ankle — confirmed live: 1963 hit the base, 2163 cleared it
+}
+
+def home_position(sid):
+    """The resting position for servo `sid` — HOME_OVERRIDES if it has one, else the shared
+    JOINT_HOME. Use this everywhere a joint is reset "home" instead of the literal 2048/
+    JOINT_HOME directly, so per-servo overrides like the one above are never silently
+    bypassed (this bit a real run: /api/move's old flat-2048 default for unspecified joints
+    reset servo 8 into the base on every Falcon lip-sync call, since lip-sync only ever names
+    joints 2/9/10/11 and lets every other joint fall back to the default)."""
+    return HOME_OVERRIDES.get(sid, JOINT_HOME)
+
+def clamp_position(sid, pos):
+    """Clamp a computed position to the servo's absolute travel (0-4095) AND its
+    MIN_POSITION safety floor, if it has one. Use this instead of the bare
+    `max(0, min(4095, pos))` pattern everywhere a joint's live position is computed."""
+    pos = max(0, min(4095, pos))
+    floor = MIN_POSITION.get(sid)
+    if floor is not None:
+        pos = max(pos, floor)
+    return pos
+
+current_positions = {sid: home_position(sid) for sid in servo_ids}
 # Track last commanded (target) positions as fallback when hardware read fails
-commanded_positions = {sid: 2048 for sid in servo_ids}
+commanded_positions = {sid: home_position(sid) for sid in servo_ids}
 # Indicates whether the last read succeeded (hardware feedback available)
 read_feedback_ok = {sid: False for sid in servo_ids}
 # Timestamp of the last read attempt per servo, to throttle retries when RX is unavailable
@@ -48,7 +97,10 @@ serial_lock = threading.Lock()
 
 # Sinusoidal motion state: each servo oscillates around a center position
 # with its own amplitude (range) and frequency (Hz).
-sin_motion_config = {sid: {'center': 2048, 'amplitude': 1000, 'frequency': 0.5, 'enabled': True} for sid in servo_ids}
+sin_motion_config = {
+    sid: {'center': home_position(sid), 'amplitude': 1000, 'frequency': 0.5, 'enabled': True}
+    for sid in servo_ids
+}
 sin_motion_running = False
 sin_motion_thread = None
 sin_motion_lock = threading.Lock()
@@ -594,7 +646,11 @@ def move():
 
     servo_positions = []
     for id in servo_ids:
-        servo_positions.append(positions.get(str(id), 2048))
+        # clamp_position applies MIN_POSITION even to an explicitly-requested value — a manual
+        # move (dashboard slider, or any future direct API caller) must not be able to drive a
+        # joint like the ankles below their safety floor either, only animations were covered
+        # before this.
+        servo_positions.append(clamp_position(id, positions.get(str(id), home_position(id))))
 
     try:
         sync_write_pos_ex(ser, servo_ids, servo_positions, speed, acc)
@@ -655,7 +711,7 @@ def sin_motion_loop():
             c = cfg_snapshot[sid]
             if c.get('enabled', True):
                 pos = c['center'] + c['amplitude'] * math.sin(2 * math.pi * c['frequency'] * t)
-                pos = int(round(max(0, min(4095, pos))))
+                pos = int(round(clamp_position(sid, pos)))
             else:
                 # Disabled servo: hold its last commanded position (no movement)
                 pos = commanded_positions.get(sid, c['center'])
@@ -726,8 +782,7 @@ def sin_motion_status():
 # the frame is written to the real servos; otherwise it is animation-only.
 # The frontend panel polls /api/emotion/status and renders the joint bars in
 # both modes, so the animation always follows the action.
-
-JOINT_HOME = 2048
+# (JOINT_HOME/home_position() are defined near the top of the file, by servo_ids.)
 
 # Per-joint oscillation parameters:
 #   amp    – swing amplitude around JOINT_HOME (position units)
@@ -735,20 +790,32 @@ JOINT_HOME = 2048
 #   phase  – phase offset (radians)
 #   shape  – 'abs' = unipolar open/close envelope (mouth), default symmetric sine
 EMOTION_ACTIONS = {
+    # 2026-09-08: full pass over 'happy' and 'enthusiastic' after two real-run reports — first
+    # that 'happy's legs were hitting on something (fixed that one run by slowing leg freq to
+    # 0.4 alone), then that ALL the predefined animations move too fast in general and that
+    # 'happy' specifically (since it drives every joint at once) needs its movement kept to a
+    # 50-100 amp "range" — a small fraction of the +-2048 full travel, vs. the previous
+    # 350-800. Every 'happy' joint's amp now sits in [50, 100], and freq is slowed everywhere
+    # (not just the legs) to a calm, uniform 0.3-0.5 instead of the old 0.6-2.4 spread.
+    # 'enthusiastic' is the SAME leg joints as 'happy' at an even faster/larger old setting
+    # (freq 1.4, amp 500-800) — same physical hitting risk, so it gets the identical
+    # amp-in-[50,100] + freq~0.4 treatment as happy's legs. 'calm' (head/mouth only, no legs —
+    # much lower risk of physically striking anything) was already the gentlest of the three
+    # and is left as-is; flag if it also needs toning down.
     'happy': {
         'name': 'Happy 开心',
         'description': 'Full-body joyful motion (all joints) 全身动作',
         'joints': {
-            2:  {'amp': 800, 'freq': 2.0, 'phase': 0.0},    # tail wag
-            3:  {'amp': 600, 'freq': 0.9, 'phase': 0.0},    # R hip bounce
-            4:  {'amp': 500, 'freq': 0.9, 'phase': 2.1},    # R knee
-            5:  {'amp': 400, 'freq': 0.9, 'phase': 4.2},    # R ankle
-            6:  {'amp': 600, 'freq': 0.9, 'phase': 3.1},    # L hip (counter-phase)
-            7:  {'amp': 500, 'freq': 0.9, 'phase': 5.2},    # L knee
-            8:  {'amp': 400, 'freq': 0.9, 'phase': 1.0},    # L ankle
-            9:  {'amp': 700, 'freq': 0.6, 'phase': 1.5},    # head yaw sweep
-            10: {'amp': 350, 'freq': 1.2, 'phase': 0.7},    # head pitch bob
-            11: {'amp': 800, 'freq': 2.4, 'phase': 0.0, 'shape': 'abs'},  # chirping mouth
+            2:  {'amp': 80,  'freq': 0.4, 'phase': 0.0},    # tail wag
+            3:  {'amp': 90,  'freq': 0.4, 'phase': 0.0},    # R hip bounce
+            4:  {'amp': 80,  'freq': 0.4, 'phase': 2.1},    # R knee
+            5:  {'amp': 70,  'freq': 0.4, 'phase': 4.2},    # R ankle
+            6:  {'amp': 90,  'freq': 0.4, 'phase': 3.1},    # L hip (counter-phase)
+            7:  {'amp': 80,  'freq': 0.4, 'phase': 5.2},    # L knee
+            8:  {'amp': 70,  'freq': 0.4, 'phase': 1.0},    # L ankle
+            9:  {'amp': 100, 'freq': 0.3, 'phase': 1.5},    # head yaw sweep
+            10: {'amp': 60,  'freq': 0.35, 'phase': 0.7},   # head pitch bob
+            11: {'amp': 90,  'freq': 0.5, 'phase': 0.0, 'shape': 'abs'},  # chirping mouth
         },
     },
     'calm': {
@@ -764,32 +831,42 @@ EMOTION_ACTIONS = {
         'name': 'Enthusiastic 热情',
         'description': 'Legs only 仅腿部',
         'joints': {
-            3:  {'amp': 800, 'freq': 1.4, 'phase': 0.0},    # R hip march
-            4:  {'amp': 650, 'freq': 1.4, 'phase': 1.6},    # R knee
-            5:  {'amp': 500, 'freq': 1.4, 'phase': 3.1},    # R ankle
-            6:  {'amp': 800, 'freq': 1.4, 'phase': 3.1},    # L hip (alternating step)
-            7:  {'amp': 650, 'freq': 1.4, 'phase': 4.7},    # L knee
-            8:  {'amp': 500, 'freq': 1.4, 'phase': 6.2},    # L ankle
+            3:  {'amp': 90, 'freq': 0.4, 'phase': 0.0},    # R hip march
+            4:  {'amp': 80, 'freq': 0.4, 'phase': 1.6},    # R knee
+            5:  {'amp': 70, 'freq': 0.4, 'phase': 3.1},    # R ankle
+            6:  {'amp': 90, 'freq': 0.4, 'phase': 3.1},    # L hip (alternating step)
+            7:  {'amp': 80, 'freq': 0.4, 'phase': 4.7},    # L knee
+            8:  {'amp': 70, 'freq': 0.4, 'phase': 6.2},    # L ankle
         },
     },
-    # IDLE waiting state: tiny random micro-movements across all joints that
-    # simulate a living animal (breathing, idle head turns, tail flicks, weight
-    # shifts on the legs, occasional mouth twitches). Uses a dedicated random
-    # walk generator instead of fixed sine parameters.
+    # IDLE waiting state: random micro-movements across all joints that simulate a living
+    # animal (breathing, idle head turns, tail flicks, weight shifts on the legs, occasional
+    # mouth twitches). Uses a dedicated random walk generator instead of fixed sine parameters.
+    # 2026-09-08: already drove all 10 joints (this WAS full-body), but amp was so small (60-120
+    # out of a +-2048 range) it barely registered as movement at all. Raised amp ~2.5-3x across
+    # the board for a clearly visible full-body sway.
+    # 2026-09-08, round two: body (tail+legs) was still moving at the same pace as the head,
+    # which read as too busy/fast overall — slowed tail+legs to a calmer base_freq (~0.1-0.12)
+    # and, in the OPPOSITE direction, sped the head up a bit above the body's new pace (~0.22-
+    # 0.25) so it reads as alert/looking-around while the body sways gently underneath — but
+    # kept well below 'happy'/'enthusiastic' speeds (0.4+) per "not too much fast". Both ankles
+    # (5, 8) are protected from hitting whatever is below them regardless of amp/freq here —
+    # IdleMotionGenerator.step() clamps every computed position through clamp_position(), which
+    # enforces MIN_POSITION for both ankles (see near the top of the file).
     'idle': {
         'name': 'Idle 待机',
         'description': 'Alive idle motion 活体待机微动',
         'joints': {
-            2:  {'amp': 120, 'base_freq': 0.4},   # tail
-            3:  {'amp': 80,  'base_freq': 0.25},  # R hip
-            4:  {'amp': 70,  'base_freq': 0.25},  # R knee
-            5:  {'amp': 60,  'base_freq': 0.25},  # R ankle
-            6:  {'amp': 80,  'base_freq': 0.25},  # L hip
-            7:  {'amp': 70,  'base_freq': 0.25},  # L knee
-            8:  {'amp': 60,  'base_freq': 0.25},  # L ankle
-            9:  {'amp': 90,  'base_freq': 0.18},  # head yaw
-            10: {'amp': 60,  'base_freq': 0.22},  # head pitch
-            11: {'amp': 70,  'base_freq': 0.3},   # mouth
+            2:  {'amp': 300, 'base_freq': 0.12},  # tail
+            3:  {'amp': 200, 'base_freq': 0.1},   # R hip
+            4:  {'amp': 180, 'base_freq': 0.1},   # R knee
+            5:  {'amp': 150, 'base_freq': 0.1},   # R ankle
+            6:  {'amp': 200, 'base_freq': 0.1},   # L hip
+            7:  {'amp': 180, 'base_freq': 0.1},   # L knee
+            8:  {'amp': 150, 'base_freq': 0.1},   # L ankle
+            9:  {'amp': 250, 'base_freq': 0.25},  # head yaw — faster than body, not "happy"-fast
+            10: {'amp': 180, 'base_freq': 0.22},  # head pitch — same idea
+            11: {'amp': 120, 'base_freq': 0.15},  # mouth — kept with the body's calmer pace
         },
     },
 }
@@ -797,7 +874,7 @@ EMOTION_ACTIONS = {
 emotion_running = False
 emotion_action = None
 emotion_drive_robot = False
-emotion_positions = {sid: JOINT_HOME for sid in servo_ids}
+emotion_positions = {sid: home_position(sid) for sid in servo_ids}
 emotion_thread = None
 emotion_sound_thread = None
 emotion_lock = threading.Lock()
@@ -811,15 +888,17 @@ EMOTION_SOUNDS = {
     'idle':          None,       # silent standby
 }
 
-def _emotion_joint_value(cfg, t):
-    """Compute one joint's position at time t (seconds) from its config."""
+def _emotion_joint_value(sid, cfg, t):
+    """Compute one joint's position at time t (seconds) from its config, oscillating around
+    THIS joint's own home_position(sid) rather than the flat JOINT_HOME."""
     amp = cfg.get('amp', 0)
     freq = cfg.get('freq', 1.0)
     phase = cfg.get('phase', 0.0)
+    home = home_position(sid)
     if cfg.get('shape') == 'abs':
         # Unipolar 0..1 envelope: opens from home and closes back (mouth)
-        return JOINT_HOME + abs(math.sin(math.pi * freq * t + phase)) * amp
-    return JOINT_HOME + math.sin(2 * math.pi * freq * t + phase) * amp
+        return home + abs(math.sin(math.pi * freq * t + phase)) * amp
+    return home + math.sin(2 * math.pi * freq * t + phase) * amp
 
 class IdleMotionGenerator:
     """Generates small-amplitude, organic-looking random micro-movements.
@@ -852,11 +931,11 @@ class IdleMotionGenerator:
             self.freq[sid] += random.uniform(-0.02, 0.02) * cfg['base_freq']
             self.freq[sid] = max(0.05, self.freq[sid])
             self.phase[sid] += 2 * math.pi * self.freq[sid] * dt
-            pos = JOINT_HOME + math.sin(self.phase[sid]) * cfg['amp']
+            pos = home_position(sid) + math.sin(self.phase[sid]) * cfg['amp']
             if sid in self.TWITCH_JOINTS:
                 pos += self.twitch[sid]
                 self.twitch[sid] *= math.exp(-dt * 6.0)  # ~6s decay time constant
-            frame[sid] = int(round(max(0, min(4095, pos))))
+            frame[sid] = int(round(clamp_position(sid, pos)))
 
         # Trigger occasional twitches on one expressive joint.
         self.next_twitch_in -= dt
@@ -947,12 +1026,12 @@ def _emotion_loop():
             frame = idle_gen.step(dt)
             for sid in servo_ids:
                 if sid not in frame:
-                    frame[sid] = JOINT_HOME
+                    frame[sid] = home_position(sid)
         else:
             for sid in servo_ids:
                 cfg = joints.get(sid)
-                pos = _emotion_joint_value(cfg, t) if cfg else JOINT_HOME
-                frame[sid] = int(round(max(0, min(4095, pos))))
+                pos = _emotion_joint_value(sid, cfg, t) if cfg else home_position(sid)
+                frame[sid] = int(round(clamp_position(sid, pos)))
         with emotion_lock:
             for sid in servo_ids:
                 emotion_positions[sid] = frame[sid]
@@ -972,17 +1051,17 @@ def _emotion_loop():
     # smoothly return all joints to the home position.
     if drive_robot and connected and ser and ser.is_open:
         try:
-            home = [JOINT_HOME] * len(servo_ids)
+            home = [home_position(sid) for sid in servo_ids]
             sync_write_pos_ex(ser, servo_ids, home, 1400, 30)
             for sid in servo_ids:
-                commanded_positions[sid] = JOINT_HOME
+                commanded_positions[sid] = home_position(sid)
                 if not read_feedback_ok[sid]:
-                    current_positions[sid] = JOINT_HOME
+                    current_positions[sid] = home_position(sid)
         except Exception as e:
             print(f"Emotion home return error: {e}")
     with emotion_lock:
         for sid in servo_ids:
-            emotion_positions[sid] = JOINT_HOME
+            emotion_positions[sid] = home_position(sid)
 
 @app.route('/api/emotion/start', methods=['POST'])
 @login_required
@@ -1002,7 +1081,7 @@ def emotion_start():
     stop_sin_motion()
     with emotion_lock:
         for sid in servo_ids:
-            emotion_positions[sid] = JOINT_HOME
+            emotion_positions[sid] = home_position(sid)
 
     emotion_action = action
     emotion_drive_robot = drive_robot
@@ -1010,8 +1089,9 @@ def emotion_start():
     emotion_thread = threading.Thread(target=_emotion_loop, daemon=True)
     emotion_thread.start()
 
-    # Start looping the corresponding animal sound (if any)
-    sound_animal = EMOTION_SOUNDS.get(action)
+    # Bird/animal sound disabled 2026-09-07 per user request — servo animation only, no audio.
+    # (was: sound_animal = EMOTION_SOUNDS.get(action))
+    sound_animal = None
     if sound_animal:
         ensure_animal_sounds()
         emotion_sound_thread = threading.Thread(
